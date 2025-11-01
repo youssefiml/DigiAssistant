@@ -1,14 +1,53 @@
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 from models.schemas import Session, Question, Answer, AnswerCreate, SessionResults, MaturityProfile, DimensionScore
 from config.database import get_database
 from services.ai_service import formulate_first_question, evaluate_and_generate_next
+from services.pdf_service import generate_diagnostic_pdf, generate_advantages_disadvantages, generate_detailed_recommendations
 from bson import ObjectId
 from datetime import datetime
 from typing import List, Dict, Any
 import random
 import traceback
+import io
 
 router = APIRouter(prefix="/sessions", tags=["Diagnostic Sessions"])
+
+@router.post("/temp", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_temp_session(company_data: dict):
+    """Create a new diagnostic session without saving company to database"""
+    db = get_database()
+    
+    # Get first criterion
+    first_criterion = await db.criteria.find_one({"criterion_id": "STRAT-P1-C1"})
+    if not first_criterion:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Diagnostic criteria not found. Please seed the database."
+        )
+    
+    # Create session with company info embedded (no company_id reference)
+    session_doc = {
+        "company_info": {
+            "name": company_data.get("name", ""),
+            "sector": company_data.get("sector", ""),
+            "size": company_data.get("size", "")
+        },
+        "status": "in_progress",
+        "progress": 0,
+        "total_questions": 72,
+        "current_criterion_id": first_criterion["criterion_id"],
+        "created_at": datetime.utcnow(),
+        "completed_at": None
+    }
+    
+    result = await db.sessions.insert_one(session_doc)
+    session_id = str(result.inserted_id)
+    
+    return {
+        "session_id": session_id,
+        "message": "Session created successfully"
+    }
 
 def generate_smart_fallback_question(criterion: Dict[str, Any], order: int) -> str:
     """Generate intelligent fallback questions when AI is unavailable"""
@@ -375,8 +414,16 @@ async def get_results(session_id: str):
             detail="Session not found"
         )
     
-    # Get company
-    company = await db.companies.find_one({"_id": ObjectId(session["company_id"])})
+    # Get company (handle both temp sessions and regular sessions)
+    company_name = "Unknown Company"
+    if "company_info" in session:
+        # Temp session
+        company_name = session["company_info"].get("name", "Unknown Company")
+    elif "company_id" in session:
+        # Regular session with saved company
+        company = await db.companies.find_one({"_id": ObjectId(session["company_id"])})
+        if company:
+            company_name = company["name"]
     
     # Get all answers
     answers = await db.answers.find({"session_id": session_id}).to_list(length=100)
@@ -444,10 +491,98 @@ async def get_results(session_id: str):
     
     return SessionResults(
         session_id=session_id,
-        company_name=company["name"],
+        company_name=company_name,
         global_score=global_score,
         maturity_profile=profile,
         dimension_scores=dimension_scores,
         gaps=gaps,
         recommendations=recommendations
+    )
+
+@router.get("/{session_id}/download-pdf")
+async def download_pdf_report(session_id: str):
+    """Generate and download PDF report"""
+    db = get_database()
+    
+    # Get session
+    session = await db.sessions.find_one({"_id": ObjectId(session_id)})
+    
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+    
+    # Get company name
+    company_name = "Unknown Company"
+    if "company_info" in session:
+        company_name = session["company_info"].get("name", "Unknown Company")
+    elif "company_id" in session:
+        company = await db.companies.find_one({"_id": ObjectId(session["company_id"])})
+        if company:
+            company_name = company["name"]
+    
+    # Get all answers
+    answers = await db.answers.find({"session_id": session_id}).to_list(length=100)
+    
+    # Calculate scores by dimension
+    dimensions = await db.dimensions.find().to_list(length=10)
+    dimension_scores = []
+    total_score = 0
+    
+    for dim in dimensions:
+        dim_answers = [a for a in answers if a["criterion_id"].startswith(dim["code"])]
+        if dim_answers:
+            dim_score = sum(a["score"] for a in dim_answers) / len(dim_answers)
+            total_score += dim_score
+            
+            dimension_scores.append({
+                "dimension_code": dim["code"],
+                "dimension_name": dim["name"],
+                "score": round(dim_score, 2),
+                "avg_score": round(dim_score, 2),
+                "answered_count": len(dim_answers)
+            })
+    
+    # Calculate global score
+    global_score = round((total_score / len(dimensions)) if dimensions else 0, 2)
+    percentage = (global_score / 3) * 100
+    
+    # Determine maturity level
+    if percentage <= 25:
+        maturity_level = "Débutant - Phase d'initiation digitale"
+    elif percentage <= 50:
+        maturity_level = "Émergent - Digitalisation en cours"
+    elif percentage <= 75:
+        maturity_level = "Challenger - Transformation avancée"
+    else:
+        maturity_level = "Leader - Excellence digitale"
+    
+    # Generate advantages and disadvantages
+    advantages, disadvantages = generate_advantages_disadvantages(dimension_scores)
+    
+    # Generate detailed recommendations
+    recommendations = generate_detailed_recommendations(dimension_scores, global_score)
+    
+    # Generate PDF
+    pdf_bytes = generate_diagnostic_pdf(
+        company_name=company_name,
+        global_score=global_score,
+        maturity_level=maturity_level,
+        dimension_scores=dimension_scores,
+        advantages=advantages,
+        disadvantages=disadvantages,
+        recommendations=recommendations,
+        session_id=session_id
+    )
+    
+    # Create streaming response
+    pdf_stream = io.BytesIO(pdf_bytes)
+    
+    return StreamingResponse(
+        pdf_stream,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=diagnostic_report_{session_id}.pdf"
+        }
     )

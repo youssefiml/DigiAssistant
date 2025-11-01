@@ -48,6 +48,13 @@ export const companyAPI = {
 
 // ==================== SESSIONS ====================
 export const sessionAPI = {
+  createWithTempCompany: async (companyData) => {
+    console.log('Creating session with temp company:', companyData);
+    const response = await api.post('/sessions/temp', companyData);
+    console.log('Session created:', response.data);
+    return response.data;
+  },
+
   create: async (companyId) => {
     console.log('Creating session for company:', companyId);
     const response = await api.post('/sessions', null, {
@@ -77,6 +84,15 @@ export const sessionAPI = {
     console.log('Getting results for session:', sessionId);
     const response = await api.get(`/sessions/${sessionId}/results`);
     console.log('Results:', response.data);
+    return response.data;
+  },
+
+  downloadPDF: async (sessionId) => {
+    console.log('Downloading PDF for session:', sessionId);
+    const response = await api.get(`/sessions/${sessionId}/download-pdf`, {
+      responseType: 'blob'
+    });
+    console.log('PDF downloaded');
     return response.data;
   },
 };

@@ -13,7 +13,9 @@ function App() {
         <Routes>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/diagnostic/:sessionId" element={<DiagnosticPage />} />
+          <Route path="/diagnostic" element={<DiagnosticPage />} />
           <Route path="/results/:sessionId" element={<ResultsPage />} />
+          <Route path="/results" element={<ResultsPage />} />
           
           {/* Default Route */}
           <Route path="/" element={<Navigate to="/dashboard" />} />

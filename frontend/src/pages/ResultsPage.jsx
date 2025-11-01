@@ -13,7 +13,8 @@ import {
   FaShieldAlt,
   FaStar,
   FaRegStar,
-  FaCheckCircle
+  FaCheckCircle,
+  FaDownload
 } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
 
@@ -23,6 +24,7 @@ export default function ResultsPage() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   const loadResults = async () => {
     try {
@@ -39,6 +41,30 @@ export default function ResultsPage() {
     loadResults();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  const handleDownloadPDF = async () => {
+    setDownloadingPDF(true);
+    try {
+      const blob = await sessionAPI.downloadPDF(sessionId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `diagnostic_report_${sessionId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading PDF:', err);
+      alert('Erreur lors du téléchargement du PDF');
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
 
   const getDimensionIcon = (dimensionCode) => {
     const icons = {
@@ -244,10 +270,27 @@ export default function ResultsPage() {
         </div>
 
         {/* Action Button */}
-        <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+        <div style={{ textAlign: 'center', marginTop: '3rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button 
+            onClick={handleDownloadPDF}
+            disabled={downloadingPDF}
+            className="btn-primary"
+            style={{ 
+              padding: '1.25rem 2.5rem', 
+              fontSize: '1.1rem', 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '0.75rem',
+              background: 'var(--secondary)',
+              opacity: downloadingPDF ? 0.7 : 1,
+              cursor: downloadingPDF ? 'not-allowed' : 'pointer'
+            }}
+          >
+            <FaDownload /> {downloadingPDF ? 'Téléchargement...' : 'Télécharger le Rapport PDF'}
+          </button>
           <button 
             onClick={() => navigate('/')} 
-            className="btn-primary"
+            className="btn-secondary"
             style={{ padding: '1.25rem 2.5rem', fontSize: '1.1rem', display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}
           >
             <FaHome /> Retour au Dashboard

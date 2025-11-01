@@ -13,16 +13,16 @@ def estimate_score_from_answer(answer: str) -> int:
     answer_length = len(answer.split())
     
     # Score 0 indicators - Absence/Non-existence
-    score_0_keywords = ["aucun", "non", "pas du tout", "jamais", "rien", "absent", "inexistant", "n'existe pas", "pas encore"]
+    score_0_keywords = ["aucun", "non", "pas du tout", "jamais", "rien", "absent", "inexistant", "n'existe pas", "pas encore", "inconnu", "nul", "zéro", "sans", "manque", "faible", "insuffisant", "limité", "peu développé"]
     
     # Score 1 indicators - Basic/Initial
-    score_1_keywords = ["début", "basique", "simple", "manuel", "occasionnel", "parfois", "peu", "limité", "minimal"]
+    score_1_keywords = ["début", "basique", "simple", "manuel", "occasionnel", "parfois", "peu", "limité", "minimal", "élémentaire","rudimentaire","léger","restreint","sporadique","rare","sommaire","superficiel","trivial","bas de gamme","ordinaire","peu fréquent","primaire","modeste","simplet","frugal","succinct","minimaliste"]
     
     # Score 2 indicators - Intermediate/Developing
-    score_2_keywords = ["en cours", "développement", "partiellement", "quelques", "certains", "moyennement", "progressivement"]
+    score_2_keywords = ["en cours","développement","partiellement","quelques","certains","moyennement","progressivement","intermédiaire","modérément","évolutif","provisoire","temporaire","relatif","semi","graduel","périphérique","fragmentaire","occasionnel"]
     
     # Score 3 indicators - Advanced/Mature
-    score_3_keywords = ["oui", "régulièrement", "systématique", "mature", "avancé", "structuré", "optimisé", "automatisé", "complet", "intégré", "toujours", "tous"]
+    score_3_keywords = ["oui","régulièrement","systématique","mature","avancé","structuré","optimisé","automatisé","complet","intégré","toujours","tous","parfait","constamment","total","efficace","professionnel","maîtrisé","permanent","continu","exhaustif","solide","fiable","développé","abouti","standardisé","éprouvé"]
     
     # Count keyword matches
     score_0_count = sum(1 for kw in score_0_keywords if kw in answer_lower)
@@ -235,7 +235,7 @@ Remember: You're having a conversation, not filling out a form!
     
     try:
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="openai/gpt-4o",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT_ADAPTIVE},
                 {"role": "user", "content": prompt}

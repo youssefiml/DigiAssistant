@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     
-    # OpenAI
-    OPENAI_API_KEY: str = "sk-proj-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"
+    # OpenAI (Optional - uses smart fallback if not provided)
+    OPENAI_API_KEY: str = ""  # Leave empty to use intelligent fallback system
     
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173"

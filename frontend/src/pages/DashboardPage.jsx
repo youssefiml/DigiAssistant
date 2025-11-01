@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { companyAPI, sessionAPI } from '../services/api';
+import { sessionAPI } from '../services/api';
 import { 
   FaBuilding, 
   FaIndustry, 
@@ -15,7 +15,11 @@ import {
   FaShoppingCart,
   FaCogs,
   FaHandshake,
-  FaList
+  FaList,
+  FaPlus,
+  FaEdit,
+  FaChartLine,
+  FaAward
 } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
 
@@ -25,26 +29,8 @@ export default function DashboardPage() {
   const [size, setSize] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [hasCompany, setHasCompany] = useState(false);
-  const [companyData, setCompanyData] = useState(null);
   
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Check if user already has a company
-    checkExistingCompany();
-  }, []);
-
-  const checkExistingCompany = async () => {
-    try {
-      const company = await companyAPI.getMyCompany();
-      setCompanyData(company);
-      setHasCompany(true);
-    } catch {
-      // No company yet
-      setHasCompany(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,17 +40,21 @@ export default function DashboardPage() {
     try {
       console.log('Form submitted with:', { companyName, sector, size });
       
-      // Create company profile
-      const company = await companyAPI.create({
+      // Store company info in localStorage (no backend company creation)
+      const tempCompanyId = 'temp_' + Date.now();
+      localStorage.setItem('tempCompanyInfo', JSON.stringify({
+        id: tempCompanyId,
         name: companyName,
         sector,
-        size,
-      });
+        size
+      }));
       
-      console.log('Company created successfully:', company);
-
-      // Create diagnostic session
-      const session = await sessionAPI.create(company.id);
+      // Create diagnostic session with temp company ID
+      const session = await sessionAPI.createWithTempCompany({
+        name: companyName,
+        sector,
+        size
+      });
       
       console.log('Session created successfully:', session);
       
@@ -73,18 +63,6 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error in handleSubmit:', error);
       setError(error.response?.data?.detail || error.message || 'Erreur lors de la création');
-      setLoading(false);
-    }
-  };
-
-  const startDiagnostic = async () => {
-    setLoading(true);
-    try {
-      // Create new diagnostic session
-      const session = await sessionAPI.create(companyData.id);
-      navigate(`/diagnostic/${session.session_id}`);
-    } catch {
-      setError('Erreur lors du démarrage du diagnostic');
       setLoading(false);
     }
   };
@@ -108,9 +86,8 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '3rem 2rem' }}>
-        {!hasCompany ? (
-          // Company Form
-          <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+        {/* Company Form */}
+        <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
               <FaBuilding style={{ fontSize: '3.5rem', color: 'var(--primary)', marginBottom: '1rem' }} />
               <h2 style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--gray-900)', marginBottom: '0.75rem' }}>
@@ -199,80 +176,6 @@ export default function DashboardPage() {
               </button>
             </form>
           </div>
-        ) : (
-          // Existing Company - Start Diagnostic
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '700px', margin: '0 auto' }}>
-            <div className="card">
-              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                <FaBullseye style={{ fontSize: '4rem', color: 'var(--secondary)', marginBottom: '1rem' }} />
-                <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--gray-900)', marginBottom: '1.5rem' }}>
-                  Votre entreprise
-                </h2>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem', background: 'var(--gray-100)', borderRadius: '1rem', border: '2px solid var(--gray-200)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <FaBuilding style={{ fontSize: '1.5rem', color: 'var(--primary)' }} />
-                  <div>
-                    <span style={{ fontWeight: '600', color: 'var(--gray-600)' }}>Nom: </span>
-                    <span style={{ fontWeight: '700', color: 'var(--gray-900)', fontSize: '1.1rem' }}>{companyData?.name}</span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <FaIndustry style={{ fontSize: '1.5rem', color: 'var(--primary)' }} />
-                  <div>
-                    <span style={{ fontWeight: '600', color: 'var(--gray-600)' }}>Secteur: </span>
-                    <span style={{ fontWeight: '700', color: 'var(--gray-900)', fontSize: '1.1rem' }}>{companyData?.sector}</span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <FaUsers style={{ fontSize: '1.5rem', color: 'var(--primary)' }} />
-                  <div>
-                    <span style={{ fontWeight: '600', color: 'var(--gray-600)' }}>Taille: </span>
-                    <span style={{ fontWeight: '700', color: 'var(--gray-900)', fontSize: '1.1rem' }}>{companyData?.size}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="card" style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%)', color: 'white', textAlign: 'center', border: 'none' }}>
-              <FaClipboardCheck style={{ fontSize: '4rem', marginBottom: '1rem' }} />
-              <h3 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '1rem' }}>
-                Prêt pour le diagnostic ?
-              </h3>
-              <p style={{ fontSize: '1.1rem', marginBottom: '2rem', opacity: 0.95, lineHeight: '1.6' }}>
-                Évaluez la maturité digitale de votre entreprise avec notre diagnostic complet piloté par l'IA
-              </p>
-              {error && (
-                <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.2)', border: '2px solid rgba(255, 255, 255, 0.4)', borderRadius: '1rem', fontSize: '0.95rem' }}>
-                  {error}
-                </div>
-              )}
-              <button
-                onClick={startDiagnostic}
-                disabled={loading}
-                style={{ 
-                  background: 'white', 
-                  color: 'var(--primary)', 
-                  padding: '1.25rem 2.5rem', 
-                  borderRadius: '1rem', 
-                  border: 'none', 
-                  fontWeight: '700', 
-                  fontSize: '1.1rem', 
-                  cursor: loading ? 'not-allowed' : 'pointer', 
-                  transition: 'all 0.3s ease', 
-                  opacity: loading ? 0.7 : 1,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.75rem'
-                }}
-                onMouseEnter={(e) => !loading && (e.target.style.transform = 'scale(1.05)')}
-                onMouseLeave={(e) => (e.target.style.transform = 'scale(1)')}
-              >
-                <FaRocket /> {loading ? 'Démarrage...' : 'Lancer le diagnostic'}
-              </button>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

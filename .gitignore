@@ -9,6 +9,12 @@ yarn.lock
 .env.*.local
 venv
 
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
 # Build output
 dist/
 build/

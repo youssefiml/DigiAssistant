@@ -10,3 +10,5 @@ passlib[bcrypt]
 python-multipart
 email-validator
 google-generativeai
+reportlab
+pillow

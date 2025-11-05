@@ -17,6 +17,14 @@ touch .env
 
 ```env
 # MongoDB Configuration
+# Option 1: Local MongoDB (for development)
+# MONGODB_URL=mongodb://localhost:27017
+
+# Option 2: MongoDB Atlas (recommended for production)
+# Get your connection string from: https://cloud.mongodb.com
+# Format: mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
+# MONGODB_URL=mongodb+srv://your-username:your-password@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+
 MONGODB_URL=mongodb://localhost:27017
 DB_NAME=digiassistant
 

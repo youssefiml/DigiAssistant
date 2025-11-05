@@ -11,13 +11,21 @@ class Settings(BaseSettings):
     Example .env file:
         OPENAI_API_KEY=your-actual-key-here
         GEMINI_API_KEY=your-actual-key-here
+        # For local MongoDB:
+        # MONGODB_URL=mongodb://localhost:27017
+        # For MongoDB Atlas (cloud):
+        # MONGODB_URL=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
         MONGODB_URL=mongodb://localhost:27017
+        DB_NAME=digiassistant
         JWT_SECRET_KEY=your-secret-key
     
     The .env file is automatically loaded and will override these default values.
     """
     
-    # MongoDB
+    # MongoDB Configuration
+    # Supports both local MongoDB and MongoDB Atlas
+    # For Atlas: mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
+    # For local: mongodb://localhost:27017
     MONGODB_URL: str = "mongodb://localhost:27017"
     DB_NAME: str = "digiassistant"
     

@@ -1,6 +1,9 @@
 """
 Seed script to populate MongoDB with diagnostic criteria
 Run this once before starting the application
+
+Supports both local MongoDB and MongoDB Atlas.
+Set MONGODB_URL in .env file or environment variables.
 """
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -9,6 +12,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Supports both local MongoDB and MongoDB Atlas connection strings
+# Local: mongodb://localhost:27017
+# Atlas: mongodb+srv://username:password@cluster.mongodb.net/digiassistant?retryWrites=true&w=majority
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 DB_NAME = os.getenv("DB_NAME", "digiassistant")
 

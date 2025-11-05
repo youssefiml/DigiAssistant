@@ -1,0 +1,13 @@
+# Files to ignore during Nixpacks build
+# This ensures Nixpacks doesn't try to use Docker
+
+frontend/
+node_modules/
+venv/
+__pycache__/
+*.pyc
+.env
+.git/
+.vscode/
+.idea/
+

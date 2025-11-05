@@ -22,8 +22,13 @@ app.add_middleware(
 # Database Events
 @app.on_event("startup")
 async def startup_event():
-    await connect_to_mongo()
-    print("🚀 DigiAssistant API is running!")
+    try:
+        await connect_to_mongo()
+        print("🚀 DigiAssistant API is running!")
+    except Exception as e:
+        print(f"⚠️ Warning: Could not connect to MongoDB on startup: {e}")
+        print("⚠️ Application will continue but database operations may fail.")
+        # Don't raise - allow app to start even if DB is temporarily unavailable
 
 @app.on_event("shutdown")
 async def shutdown_event():

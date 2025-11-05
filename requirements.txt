@@ -1,0 +1,16 @@
+# FastAPI Backend Dependencies
+# This file is a symlink/copy for Railway Nixpacks auto-detection
+# The actual requirements are in backend/requirements.txt
+
+fastapi
+uvicorn[standard]
+motor
+pydantic
+pydantic-settings
+python-dotenv
+python-multipart
+google-generativeai
+openai
+reportlab
+pillow
+

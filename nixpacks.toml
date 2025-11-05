@@ -2,7 +2,7 @@
 # This tells Railway where to find the Python project
 
 [phases.setup]
-nixPkgs = ["python311", "pip"]
+nixPkgs = ["python311"]
 
 [phases.install]
 cmds = [

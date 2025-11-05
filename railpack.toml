@@ -1,0 +1,10 @@
+# Railpack Configuration for DigiAssistant
+[build]
+# Railpack will auto-detect Python from backend/requirements.txt
+# but we specify the build command to ensure dependencies are installed
+buildCommand = "cd backend && pip install -r requirements.txt"
+
+[deploy]
+# Use the start.sh script in root
+startCommand = "./start.sh"
+

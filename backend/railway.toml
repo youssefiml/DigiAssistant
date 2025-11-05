@@ -1,0 +1,9 @@
+# Railway configuration for backend directory
+# This file helps Railway detect the Python project
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "python -m uvicorn main:app --host 0.0.0.0 --port $PORT"
+

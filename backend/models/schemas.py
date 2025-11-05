@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from bson import ObjectId
@@ -18,32 +18,6 @@ class PyObjectId(ObjectId):
     def __get_pydantic_json_schema__(cls, field_schema):
         field_schema.update(type="string")
 
-# ==================== USER ====================
-class UserBase(BaseModel):
-    email: EmailStr
-    name: str
-
-class UserCreate(UserBase):
-    password: str
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
-
-class User(UserBase):
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    hashed_password: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-
-class UserResponse(UserBase):
-    id: str
-    created_at: datetime
-
 # ==================== COMPANY ====================
 class CompanyBase(BaseModel):
     name: str
@@ -55,7 +29,6 @@ class CompanyCreate(CompanyBase):
 
 class Company(CompanyBase):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    user_id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     class Config:
@@ -119,7 +92,6 @@ class SessionStatus(str):
 
 class Session(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    user_id: str
     company_id: str
     status: str = SessionStatus.IN_PROGRESS
     progress: int = 0  # Number of questions answered
@@ -173,6 +145,7 @@ class DimensionScore(BaseModel):
     dimension_name: str
     score: float
     pillar_scores: List[dict]
+    answered_count: int = 0  # Number of questions answered for this dimension
 
 class MaturityProfile(BaseModel):
     level: str  # "beginner", "emergent", "challenger", "leader"

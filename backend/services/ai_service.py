@@ -3,9 +3,81 @@ from config.settings import settings
 import json
 from typing import List, Dict, Any
 import random
+import asyncio
 
-# Configure OpenAI
-client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+# Try to import Google Gemini
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    print("[AI] Google Gemini not available - install with: pip install google-generativeai")
+
+# Configure AI Clients
+print(f"[AI] Initializing AI service...")
+print(f"[AI] Provider: {settings.AI_PROVIDER}")
+print(f"[AI] OpenAI API Key present: {bool(settings.OPENAI_API_KEY)}")
+print(f"[AI] Gemini API Key present: {bool(settings.GEMINI_API_KEY)}")
+
+# Initialize OpenAI client (if configured)
+openai_client = None
+if settings.OPENAI_API_KEY:
+    try:
+        openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        print(f"[AI] OpenAI client initialized (key prefix: {settings.OPENAI_API_KEY[:10]}...)")
+    except Exception as e:
+        print(f"[AI] OpenAI client initialization error: {e}")
+
+# Initialize Gemini client (if configured)
+gemini_client = None
+gemini_model_name = None
+if settings.GEMINI_API_KEY and GEMINI_AVAILABLE:
+    try:
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        # Try different Gemini models - some API keys may have restrictions
+        model_names_to_try = [
+            'gemini-2.0-flash',      # Stable 2.0 version (often more accessible)
+            'gemini-flash-latest',   # Latest flash (alias)
+            'gemini-2.5-flash',      # Latest stable flash model
+            'gemini-1.5-flash',      # Older but reliable
+        ]
+        
+        for model_name in model_names_to_try:
+            try:
+                gemini_client = genai.GenerativeModel(model_name)
+                gemini_model_name = model_name
+                print(f"[AI] Gemini client initialized with {model_name} (key prefix: {settings.GEMINI_API_KEY[:10]}...)")
+                break
+            except Exception as e:
+                continue
+        
+        if not gemini_client:
+            raise Exception("Could not initialize any Gemini model")
+    except Exception as e:
+        print(f"[AI] Gemini client initialization error: {e}")
+
+# Determine which client to use
+client = None
+client_type = None
+
+if settings.AI_PROVIDER == "gemini" and gemini_client:
+    client = gemini_client
+    client_type = "gemini"
+    print("[AI] Using Google Gemini as AI provider")
+elif settings.AI_PROVIDER == "openai" and openai_client:
+    client = openai_client
+    client_type = "openai"
+    print("[AI] Using OpenAI as AI provider")
+elif gemini_client:
+    client = gemini_client
+    client_type = "gemini"
+    print("[AI] Auto-selected Gemini (OpenAI not available)")
+elif openai_client:
+    client = openai_client
+    client_type = "openai"
+    print("[AI] Auto-selected OpenAI (Gemini not available)")
+else:
+    print("[AI] No AI provider available - using intelligent fallback system")
 
 def estimate_score_from_answer(answer: str) -> int:
     """Estimate a score based on answer characteristics (fallback when AI unavailable)"""
@@ -119,71 +191,146 @@ def generate_smart_fallback_question(criterion: Dict[str, Any]) -> str:
     # Pick a random template for variety
     return random.choice(dimension_templates)
 
-SYSTEM_PROMPT_FIRST_QUESTION = """You are a friendly digital maturity consultant conducting a diagnostic assessment.
+SYSTEM_PROMPT_FIRST_QUESTION = """You are a professional digital transformation consultant. Create a warm, conversational French question for a business diagnostic interview. Keep it professional, friendly, and concise (2-3 sentences)."""
 
-Your task: Create a warm, welcoming opening question that:
-- Introduces yourself and the diagnostic process
-- Explains you'll assess their digital maturity
-- Makes them feel comfortable
-- Asks about the given criterion naturally
-- Uses a conversational, professional tone in French
+SYSTEM_PROMPT_ADAPTIVE = """You are an expert digital transformation consultant conducting a maturity diagnostic in French.
 
-Keep it concise (2-3 sentences max)."""
-
-SYSTEM_PROMPT_ADAPTIVE = """You are an expert digital transformation consultant conducting a maturity diagnostic.
+**CRITICAL REQUIREMENTS:**
+- ALL responses must be in FRENCH (français)
+- You are having a REAL CONVERSATION, not reading a questionnaire
+- Questions must start naturally, NOT with "Given", "Ensuite", or "Question suivante"
 
 Your role:
 1. **EVALUATE** the user's answer against the criterion options (score 0-3)
-2. **REACT** empathetically - acknowledge what they shared
-3. **ASK** the next question in a natural, conversational way
-
-**CRITICAL: You are having a REAL CONVERSATION, not reading a questionnaire!**
+2. **REACT** empathetically in French - acknowledge what they shared
+3. **ASK** the next question in natural French conversation
 
 **READ THE CONVERSATION HISTORY** - Remember what they've said!
 - Reference previous answers when relevant
 - Build logical connections between topics
 - Show you're listening and understanding
 
-**EXAMPLES OF GOOD QUESTIONS:**
-✓ "You mentioned using Excel earlier - how do your teams collaborate on these files?"
-✓ "Interesting that you have a CRM. Does it integrate with your other tools?"
-✓ "Since your strategy is still being defined, how do you currently make digital investment decisions?"
+**EXAMPLES OF GOOD QUESTIONS (in French):**
+✓ "Vous avez mentionné utiliser Excel plus tôt - comment vos équipes collaborent-elles sur ces fichiers?"
+✓ "Intéressant que vous ayez un CRM. Est-ce qu'il s'intègre avec vos autres outils?"
+✓ "Puisque votre stratégie est encore en cours de définition, comment prenez-vous actuellement les décisions d'investissement digital?"
 
 **BAD QUESTIONS (DON'T DO THIS):**
-❌ "Bonjour! Parlez-moi de: [criterion text]"
-❌ "Question suivante: [criterion text]"
-❌ Just repeating the criterion without context
+❌ "Given that..." (English)
+❌ "Bonjour! Parlez-moi de: [criterion text]" (too formal/repetitive)
+❌ "Question suivante: [criterion text]" (sounds like a form)
+❌ "Ensuite, parlez-moi de..." (too sequential)
 
 **SCORING GUIDE:**
-- 0 = Absent/Non existent
-- 1 = Basic/Initial
-- 2 = Intermediate/Developing
-- 3 = Advanced/Mature
+- 0 = Absent/Non existant
+- 1 = Basique/Initial
+- 2 = Intermédiaire/En développement
+- 3 = Avancé/Mature
 
-Return JSON: {
-  "evaluation": {"score": 0-3, "justification": "why this score"},
-  "ai_reaction": "empathetic response to their answer",
-  "next_question": "conversational question for next criterion"
+Return JSON (all text in French): {
+  "evaluation": {"score": 0-3, "justification": "explication en français"},
+  "ai_reaction": "réaction empathique en français",
+  "next_question": "question conversationnelle en français pour le prochain critère"
 }"""
 
 async def formulate_first_question(criterion_text: str) -> str:
     """Generate the first question of the diagnostic"""
-    prompt = f"First criterion: '{criterion_text}'\n\nYour friendly welcome question:"
-    
-    try:
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT_FIRST_QUESTION},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=200
+    # Use fallback if no API key
+    if not openai_client and not gemini_client:
+        return (
+            f"Bonjour! Je suis votre conseiller digital. "
+            f"Commençons par comprendre votre situation actuelle. "
+            f"Concernant {criterion_text.lower()}, "
+            f"où en êtes-vous aujourd'hui?"
         )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"[AI] Error formulating first question: {e}")
-        return f"Bonjour! Commençons notre diagnostic de maturité digitale. {criterion_text} Pouvez-vous m'en dire plus?"
+    
+    # Direct prompt - Gemini works better with simple, direct requests
+    full_prompt = f"Créez une question d'accueil amicale en français pour un diagnostic de maturité digitale. Le sujet est: {criterion_text}. Soyez conversationnel et professionnel (2-3 phrases maximum)."
+    
+    # Try Gemini first if available and configured
+    if gemini_client and (settings.AI_PROVIDER == "gemini" or not openai_client):
+        try:
+            print(f"[AI] Calling Gemini API for first question...")
+            # Gemini uses synchronous API, run in thread to avoid blocking
+            response = await asyncio.to_thread(
+                client.generate_content,
+                full_prompt,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.7,
+                    max_output_tokens=500,  # Increased to avoid truncation
+                    top_p=0.95,
+                    top_k=40,
+                ),
+                safety_settings=[
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                ]
+            )
+            # Extract text safely - handle different response formats
+            result = None
+            if response.candidates and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                # Check finish reason: 1=STOP (success), 2=MAX_TOKENS (truncated but has content), 3=SAFETY, 4=RECITATION, 5=OTHER
+                finish_reason = candidate.finish_reason
+                if finish_reason == 3:  # SAFETY - actually blocked
+                    print(f"[AI] Warning: Response was blocked by safety filters (finish_reason=3). Using fallback...")
+                    raise Exception("Response blocked by safety filters")
+                
+                # Extract text from parts (works even with finish_reason=2 MAX_TOKENS)
+                if candidate.content and candidate.content.parts and len(candidate.content.parts) > 0:
+                    result = candidate.content.parts[0].text.strip()
+                    if finish_reason == 2:  # MAX_TOKENS - response was truncated
+                        print(f"[AI] Note: Response truncated (finish_reason=2), but content extracted successfully")
+            
+            # Fallback to response.text if no content in parts (shouldn't happen, but just in case)
+            if not result:
+                try:
+                    result = response.text.strip()
+                except ValueError as e:
+                    # This happens when finish_reason is 2 and trying to use .text property
+                    print(f"[AI] Warning: Could not use response.text (likely truncated). Trying alternative extraction...")
+                    # Try to get any available text
+                    if response.candidates and response.candidates[0].content:
+                        result = "".join([part.text for part in response.candidates[0].content.parts if hasattr(part, 'text')]).strip()
+                    if not result:
+                        raise Exception("Could not extract response text")
+            
+            print(f"[AI] Successfully generated first question with Gemini")
+            return result
+        except Exception as gemini_error:
+            print(f"[AI] Gemini failed: {gemini_error}. Trying OpenAI fallback...")
+            # Fall through to OpenAI attempt
+    
+    # Try OpenAI if available (either as primary or fallback)
+    if openai_client:
+        try:
+            print(f"[AI] Calling OpenAI API for first question...")
+            prompt = f"First criterion: '{criterion_text}'\n\nYour friendly welcome question:"
+            response = await openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT_FIRST_QUESTION},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=200
+            )
+            result = response.choices[0].message.content.strip()
+            print(f"[AI] Successfully generated first question with OpenAI")
+            return result
+        except Exception as openai_error:
+            print(f"[AI] OpenAI also failed: {openai_error}")
+    
+    # If both fail, use intelligent fallback
+    print(f"[AI] Both providers failed, using intelligent fallback")
+    return (
+        f"Bonjour! Je suis votre conseiller digital. "
+        f"Commençons par comprendre votre situation actuelle. "
+        f"Concernant {criterion_text.lower()}, "
+        f"où en êtes-vous aujourd'hui?"
+    )
 
 async def evaluate_and_generate_next(
     conversation_history: List[Dict[str, Any]],
@@ -233,22 +380,8 @@ async def evaluate_and_generate_next(
 Remember: You're having a conversation, not filling out a form!
 """
     
-    try:
-        response = await client.chat.completions.create(
-            model="openai/gpt-4o",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT_ADAPTIVE},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=500,
-            response_format={"type": "json_object"}
-        )
-        result = json.loads(response.choices[0].message.content)
-        return result
-    except Exception as e:
-        print(f"[AI] Error in evaluation (using intelligent fallback): {e}")
-        # Use intelligent fallback with score estimation
+    # Use fallback if no API key available
+    if not openai_client and not gemini_client:
         estimated_score = estimate_score_from_answer(current_answer)
         return {
             "evaluation": {
@@ -258,3 +391,130 @@ Remember: You're having a conversation, not filling out a form!
             "ai_reaction": generate_smart_fallback_reaction(estimated_score),
             "next_question": generate_smart_fallback_question(next_criterion)
         }
+    
+                    # Try Gemini first if available and configured
+    if gemini_client and (settings.AI_PROVIDER == "gemini" or not openai_client):
+        try:
+            print(f"[AI] Calling Gemini API for evaluation and next question...")
+            full_prompt = f"{SYSTEM_PROMPT_ADAPTIVE}\n\n{prompt}\n\nIMPORTANT: Return ONLY valid JSON in this exact format (ALL TEXT IN FRENCH):\n{{\n  \"evaluation\": {{\"score\": 0-3, \"justification\": \"explication en français\"}},\n  \"ai_reaction\": \"réaction empathique en français\",\n  \"next_question\": \"question conversationnelle en français (NE PAS commencer par 'Given' ou 'Ensuite')\"\n}}"
+            # Gemini uses synchronous API, run in thread to avoid blocking
+            response = await asyncio.to_thread(
+                gemini_client.generate_content,
+                full_prompt,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.7,
+                    max_output_tokens=500,
+                    top_p=0.95,
+                    top_k=40,
+                ),
+                safety_settings=[
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
+                ]
+            )
+            # Check if response was blocked
+            if response.candidates and response.candidates[0].finish_reason == 2:
+                print(f"[AI] Warning: Response was blocked (finish_reason=2). Using fallback...")
+                raise Exception("Response blocked by safety filters")
+            
+            # Extract text safely
+            if response.candidates and response.candidates[0].content:
+                response_text = response.candidates[0].content.parts[0].text.strip()
+            else:
+                response_text = response.text.strip()
+            
+            # Parse JSON from response (Gemini sometimes adds markdown formatting)
+            # Remove markdown code blocks if present
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+            
+            result = json.loads(response_text)
+            
+            # Clean up the next_question if it starts with "Given" or other unwanted patterns
+            if "next_question" in result:
+                next_q = result["next_question"]
+                # Remove common unwanted prefixes (English and overly formal French)
+                unwanted_prefixes = [
+                    "Given", "Given that", "Now, ", "Next, ", "Then, ",
+                    "Étant donné que", "Étant donné", "Vu que", "Considérant que",
+                    "Ensuite, ", "Question suivante: ", "Par la suite, "
+                ]
+                next_q_lower = next_q.lower()
+                for prefix in unwanted_prefixes:
+                    if next_q_lower.startswith(prefix.lower()):
+                        next_q = next_q[len(prefix):].strip()
+                        # Capitalize first letter if needed
+                        if next_q and not next_q[0].isupper():
+                            next_q = next_q[0].upper() + next_q[1:]
+                        result["next_question"] = next_q
+                        print(f"[AI] Cleaned up question (removed '{prefix}' prefix)")
+                        break
+            
+            print(f"[AI] Successfully generated evaluation and next question with Gemini")
+            return result
+        except Exception as gemini_error:
+            print(f"[AI] Gemini failed: {gemini_error}. Trying OpenAI fallback...")
+            # Fall through to OpenAI attempt
+        except Exception as gemini_error:
+            print(f"[AI] Gemini failed: {gemini_error}. Trying OpenAI fallback...")
+            # Fall through to OpenAI attempt
+    
+    # Try OpenAI if available (either as primary or fallback)
+    if openai_client:
+        try:
+            print(f"[AI] Calling OpenAI API for evaluation and next question...")
+            response = await openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT_ADAPTIVE},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=500,
+                response_format={"type": "json_object"}
+            )
+            result = json.loads(response.choices[0].message.content)
+            
+            # Clean up the next_question if it starts with "Given" or other unwanted patterns
+            if "next_question" in result:
+                next_q = result["next_question"]
+                # Remove common unwanted prefixes (English and overly formal French)
+                unwanted_prefixes = [
+                    "Given", "Given that", "Now, ", "Next, ", "Then, ",
+                    "Étant donné que", "Étant donné", "Vu que", "Considérant que",
+                    "Ensuite, ", "Question suivante: ", "Par la suite, "
+                ]
+                next_q_lower = next_q.lower()
+                for prefix in unwanted_prefixes:
+                    if next_q_lower.startswith(prefix.lower()):
+                        next_q = next_q[len(prefix):].strip()
+                        # Capitalize first letter if needed
+                        if next_q and not next_q[0].isupper():
+                            next_q = next_q[0].upper() + next_q[1:]
+                        result["next_question"] = next_q
+                        print(f"[AI] Cleaned up question (removed '{prefix}' prefix)")
+                        break
+            
+            print(f"[AI] Successfully generated evaluation and next question with OpenAI")
+            return result
+        except Exception as openai_error:
+            print(f"[AI] OpenAI also failed: {openai_error}")
+    
+    # If both fail, use intelligent fallback
+    print(f"[AI] Both providers failed, using intelligent fallback")
+    estimated_score = estimate_score_from_answer(current_answer)
+    return {
+        "evaluation": {
+            "score": estimated_score, 
+            "justification": f"Score estimé basé sur l'analyse de votre réponse"
+        },
+        "ai_reaction": generate_smart_fallback_reaction(estimated_score),
+        "next_question": generate_smart_fallback_question(next_criterion)
+    }

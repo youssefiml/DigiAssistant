@@ -178,7 +178,7 @@ export default function ResultsPage() {
         {/* Dimensions Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }}>
           {dimensions.map((dim) => {
-            const avgScore = dim.avg_score ?? 0;
+            const avgScore = dim.score ?? 0;
             const answeredCount = dim.answered_count ?? 0;
             
             return (

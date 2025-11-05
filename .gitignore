@@ -42,3 +42,11 @@ coverage/
 # PDF temporary files
 *.pdf
 !example-report.pdf
+# Environment variables
+.env
+backend/.env
+frontend/.env
+
+# API Keys
+*.key
+*.pem

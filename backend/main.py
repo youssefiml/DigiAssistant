@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config.settings import settings
 from config.database import connect_to_mongo, close_mongo_connection
-from routes import auth, company, sessions
+from routes import company, sessions
 
 app = FastAPI(
     title="DigiAssistant API",
@@ -43,7 +43,6 @@ async def health_check():
     return {"status": "healthy"}
 
 # Include Routers
-app.include_router(auth.router)
 app.include_router(company.router)
 app.include_router(sessions.router)
 

@@ -130,24 +130,24 @@ export default function DiagnosticPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       {/* Header */}
-      <header style={{ background: 'var(--white)', boxShadow: 'var(--shadow-md)', padding: '1.25rem 2rem', borderBottom: '3px solid var(--primary)' }}>
+      <header style={{ background: 'var(--white)', boxShadow: 'var(--shadow-md)', padding: '0.75rem 2rem', borderBottom: '2px solid var(--primary)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <MdDashboard style={{ fontSize: '2rem', color: 'var(--primary)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <MdDashboard style={{ fontSize: '1.5rem', color: 'var(--primary)' }} />
             <div>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary)' }}>
+              <h1 style={{ fontSize: '1.125rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '0.125rem' }}>
                 Diagnostic Digital
               </h1>
-              <p style={{ fontSize: '0.9rem', color: 'var(--gray-600)', marginTop: '0.25rem', fontWeight: '500' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--gray-600)', fontWeight: '500' }}>
                 Question {progress.current + 1} / {progress.total}
               </p>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--secondary)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end' }}>
               <FaChartBar /> {Math.round(progressPercentage)}%
             </div>
-            <div className="progress-bar" style={{ width: '180px' }}>
+            <div className="progress-bar" style={{ width: '150px' }}>
               <div className="progress-fill" style={{ width: `${progressPercentage}%` }} />
             </div>
           </div>
@@ -155,8 +155,8 @@ export default function DiagnosticPage() {
       </header>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '2rem 1rem', background: 'var(--gray-50)' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 1rem', background: 'var(--gray-50)' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {messages.map((msg, idx) => (
             <div
               key={idx}
@@ -164,32 +164,32 @@ export default function DiagnosticPage() {
             >
               <div className={msg.type === 'user' ? 'message-user' : msg.type === 'ai-feedback' ? 'message-feedback' : 'message-ai'}>
                 {msg.type === 'ai' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                    <FaRobot style={{ fontSize: '1.5rem', color: 'var(--primary)' }} />
-                    <span style={{ fontWeight: '600', color: 'var(--primary)' }}>Assistant Digital</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <FaRobot style={{ fontSize: '1.25rem', color: 'var(--primary)' }} />
+                    <span style={{ fontWeight: '600', color: 'var(--primary)', fontSize: '0.9rem' }}>Assistant Digital</span>
                   </div>
                 )}
                 {msg.type === 'ai-feedback' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                    <FaCheckCircle style={{ fontSize: '1.5rem', color: 'var(--secondary)' }} />
-                    <span style={{ fontWeight: '600', color: 'var(--secondary)' }}>Feedback</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <FaCheckCircle style={{ fontSize: '1.25rem', color: 'var(--secondary)' }} />
+                    <span style={{ fontWeight: '600', color: 'var(--secondary)', fontSize: '0.9rem' }}>Feedback</span>
                   </div>
                 )}
-                <div style={{ fontSize: '1.05rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                <div style={{ fontSize: '0.95rem', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
                   {msg.content}
                 </div>
                 {msg.score !== undefined && (
-                  <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '2px solid var(--gray-300)', fontSize: '0.9rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--gray-700)' }}>
+                  <div style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid var(--gray-300)', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--gray-700)' }}>
                     <FaChartBar style={{ color: 'var(--secondary)' }} />
                     Score: {msg.score}/3 
-                    {msg.score === 3 && <><FaStar style={{ color: '#fbbf24' }} /><FaStar style={{ color: '#fbbf24' }} /><FaStar style={{ color: '#fbbf24' }} /></>}
-                    {msg.score === 2 && <><FaStar style={{ color: '#fbbf24' }} /><FaStar style={{ color: '#fbbf24' }} /><FaRegStar style={{ color: '#d1d5db' }} /></>}
-                    {msg.score === 1 && <><FaStar style={{ color: '#fbbf24' }} /><FaRegStar style={{ color: '#d1d5db' }} /><FaRegStar style={{ color: '#d1d5db' }} /></>}
-                    {msg.score === 0 && <><FaRegStar style={{ color: '#d1d5db' }} /><FaRegStar style={{ color: '#d1d5db' }} /><FaRegStar style={{ color: '#d1d5db' }} /></>}
+                    {msg.score === 3 && <><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /></>}
+                    {msg.score === 2 && <><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /></>}
+                    {msg.score === 1 && <><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /></>}
+                    {msg.score === 0 && <><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /></>}
                   </div>
                 )}
-                <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <FaClock style={{ fontSize: '0.7rem' }} />
+                <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)', marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <FaClock style={{ fontSize: '0.65rem' }} />
                   {msg.timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
@@ -199,7 +199,7 @@ export default function DiagnosticPage() {
           {loading && (
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
               <div className="message-ai" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <FaRobot style={{ fontSize: '1.5rem', color: 'var(--primary)' }} />
+                <FaRobot style={{ fontSize: '1.25rem', color: 'var(--primary)' }} />
                 <div style={{ display: 'flex', gap: '0.25rem' }}>
                   <span className="typing-dot" />
                   <span className="typing-dot" />
@@ -214,15 +214,15 @@ export default function DiagnosticPage() {
       </div>
 
       {/* Input */}
-      <div style={{ background: 'var(--white)', borderTop: '2px solid var(--gray-200)', padding: '1.5rem 2rem', boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.05)' }}>
+      <div style={{ background: 'var(--white)', borderTop: '2px solid var(--gray-200)', padding: '1rem 2rem', boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.05)' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           {error && (
-            <div style={{ marginBottom: '1rem', padding: '1rem', background: '#fee2e2', border: '2px solid #ef4444', borderRadius: '1rem', color: '#991b1b', fontSize: '0.95rem', fontWeight: '500' }}>
+            <div style={{ marginBottom: '0.75rem', padding: '0.75rem', background: '#fee2e2', border: '2px solid #ef4444', borderRadius: '0.75rem', color: '#991b1b', fontSize: '0.875rem', fontWeight: '500' }}>
               {error}
             </div>
           )}
           
-          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
             <div style={{ flex: 1, position: 'relative' }}>
               <textarea
                 value={userInput}
@@ -237,21 +237,22 @@ export default function DiagnosticPage() {
                 className="input-field"
                 style={{ 
                   resize: 'vertical', 
-                  minHeight: '110px',
-                  fontSize: '1rem',
-                  paddingRight: '1.25rem'
+                  minHeight: '80px',
+                  fontSize: '0.95rem',
+                  paddingRight: '1.25rem',
+                  paddingBottom: '2rem'
                 }}
                 disabled={loading}
               />
               <div style={{ 
                 position: 'absolute', 
-                bottom: '0.75rem', 
-                right: '1rem', 
-                fontSize: '0.75rem', 
+                bottom: '0.5rem', 
+                right: '0.75rem', 
+                fontSize: '0.7rem', 
                 color: 'var(--gray-500)',
                 background: 'var(--white)',
-                padding: '0.25rem 0.5rem',
-                borderRadius: '0.5rem',
+                padding: '0.2rem 0.4rem',
+                borderRadius: '0.375rem',
                 fontWeight: '500'
               }}>
                 {userInput.length} caractères
@@ -262,13 +263,13 @@ export default function DiagnosticPage() {
               disabled={loading || !userInput.trim()}
               className="btn-primary"
               style={{ 
-                padding: '1.25rem 2rem', 
-                fontSize: '1.05rem', 
+                padding: '1rem 1.5rem', 
+                fontSize: '0.95rem', 
                 whiteSpace: 'nowrap', 
                 display: 'flex', 
                 alignItems: 'center', 
                 gap: '0.5rem',
-                minHeight: '3.5rem'
+                minHeight: '3rem'
               }}
             >
               <FaPaperPlane /> {loading ? 'Envoi...' : 'Envoyer'}
@@ -276,20 +277,20 @@ export default function DiagnosticPage() {
           </form>
           
           <div style={{ 
-            marginTop: '1rem', 
+            marginTop: '0.75rem', 
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            fontSize: '0.85rem',
+            fontSize: '0.75rem',
             color: 'var(--gray-600)'
           }}>
             <p style={{ 
               fontWeight: '500', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '0.5rem' 
+              gap: '0.375rem' 
             }}>
-              <FaLightbulb style={{ color: 'var(--secondary)' }} />
+              <FaLightbulb style={{ color: 'var(--secondary)', fontSize: '0.875rem' }} />
               Soyez précis et détaillé pour un meilleur diagnostic
             </p>
             <p style={{ 

@@ -2,12 +2,17 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 from models.schemas import Session, Question, Answer, AnswerCreate, SessionResults, MaturityProfile, DimensionScore
 from config.database import get_database
-from services.ai_service import formulate_first_question, evaluate_and_generate_next
+from services.ai_service import (
+    formulate_first_question, 
+    evaluate_and_generate_next,
+    generate_smart_fallback_question,
+    estimate_score_from_answer
+)
 from services.pdf_service import generate_diagnostic_pdf, generate_advantages_disadvantages, generate_detailed_recommendations
+from services.scoring_service import calculate_complete_results, calculate_dimension_scores
 from bson import ObjectId
 from datetime import datetime
 from typing import List, Dict, Any
-import random
 import traceback
 import io
 
@@ -49,96 +54,20 @@ async def create_temp_session(company_data: dict):
         "message": "Session created successfully"
     }
 
-def generate_smart_fallback_question(criterion: Dict[str, Any], order: int) -> str:
-    """Generate intelligent fallback questions when AI is unavailable"""
-    criterion_text = criterion.get("criterion_text", "")
-    criterion_id = criterion.get("criterion_id", "")
-    
-    # Question templates based on dimension
-    dimension = criterion_id.split("-")[0]
-    
-    templates = {
-        "STRAT": [
-            f"Concernant {criterion_text.lower()}, comment cela se traduit-il concrètement dans votre entreprise?",
-            f"Pouvez-vous me décrire l'état actuel de {criterion_text.lower()} chez vous?",
-            f"Où en êtes-vous aujourd'hui par rapport à {criterion_text.lower()}?",
-        ],
-        "CULTURE": [
-            f"Dans votre équipe, comment se manifeste {criterion_text.lower()}?",
-            f"Pouvez-vous me parler de {criterion_text.lower()} au sein de votre organisation?",
-            f"Comment décririez-vous {criterion_text.lower()} dans vos équipes?",
-        ],
-        "CLIENT": [
-            f"En ce qui concerne {criterion_text.lower()}, qu'avez-vous mis en place avec vos clients?",
-            f"Comment gérez-vous actuellement {criterion_text.lower()}?",
-            f"Pouvez-vous me décrire votre approche sur {criterion_text.lower()}?",
-        ],
-        "PROCESS": [
-            f"Dans vos processus internes, où en êtes-vous sur {criterion_text.lower()}?",
-            f"Comment {criterion_text.lower()} est-il organisé dans votre entreprise?",
-            f"Pouvez-vous me parler de la façon dont vous gérez {criterion_text.lower()}?",
-        ],
-        "TECH": [
-            f"Sur le plan technique, comment se présente {criterion_text.lower()} chez vous?",
-            f"Quels outils ou équipements avez-vous pour {criterion_text.lower()}?",
-            f"Pouvez-vous me décrire votre situation concernant {criterion_text.lower()}?",
-        ],
-        "SECURITE": [
-            f"En matière de sécurité, où en êtes-vous sur {criterion_text.lower()}?",
-            f"Comment abordez-vous la question de {criterion_text.lower()}?",
-            f"Qu'avez-vous mis en place concernant {criterion_text.lower()}?",
-        ]
-    }
-    
-    # Get templates for this dimension or use generic ones
-    dimension_templates = templates.get(dimension, [
-        f"Parlons de {criterion_text.lower()}. Quelle est votre situation actuelle?",
-        f"Concernant {criterion_text.lower()}, pouvez-vous m'en dire plus?",
-    ])
-    
-    # Pick a random template for variety
-    return random.choice(dimension_templates)
-
-def estimate_score_from_answer(answer: str) -> int:
-    """Estimate a score based on answer characteristics (fallback when AI unavailable)"""
-    answer_lower = answer.lower()
-    answer_length = len(answer.split())
-    
-    # Score 0 indicators - Absence/Non-existence
-    score_0_keywords = ["aucun", "non", "pas du tout", "jamais", "rien", "absent", "inexistant", "n'existe pas", "pas encore"]
-    
-    # Score 1 indicators - Basic/Initial
-    score_1_keywords = ["début", "basique", "simple", "manuel", "occasionnel", "parfois", "peu", "limité", "minimal"]
-    
-    # Score 2 indicators - Intermediate/Developing
-    score_2_keywords = ["en cours", "développement", "partiellement", "quelques", "certains", "moyennement", "progressivement"]
-    
-    # Score 3 indicators - Advanced/Mature
-    score_3_keywords = ["oui", "régulièrement", "systématique", "mature", "avancé", "structuré", "optimisé", "automatisé", "complet", "intégré", "toujours", "tous"]
-    
-    # Count keyword matches
-    score_0_count = sum(1 for kw in score_0_keywords if kw in answer_lower)
-    score_1_count = sum(1 for kw in score_1_keywords if kw in answer_lower)
-    score_2_count = sum(1 for kw in score_2_keywords if kw in answer_lower)
-    score_3_count = sum(1 for kw in score_3_keywords if kw in answer_lower)
-    
-    # Determine score based on keywords and length
-    if score_0_count > 0 or answer_length < 5:
-        return 0
-    elif score_3_count >= 2 or (score_3_count > 0 and answer_length > 30):
-        return 3
-    elif score_2_count > 0 or (score_1_count > 0 and answer_length > 15):
-        return 2
-    elif score_1_count > 0 or answer_length > 10:
-        return 1
-    else:
-        # Default: medium score for unclear answers
-        return 1 if answer_length < 15 else 2
+# Removed duplicate functions - now importing from ai_service
 
 @router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)
-async def create_session(company_id: str):
+async def create_session(request: dict):
     """Create a new diagnostic session"""
     db = get_database()
+    
+    # Extract company_id from request body
+    company_id = request.get("company_id")
+    if not company_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="company_id is required"
+        )
     
     # Verify company exists
     company = await db.companies.find_one({"_id": ObjectId(company_id)})
@@ -213,7 +142,7 @@ async def get_next_question(session_id: str):
         else:
             # This shouldn't happen - questions are generated when submitting answers
             # But provide a fallback just in case
-            question_text = generate_smart_fallback_question(criterion, question_count + 1)
+            question_text = generate_smart_fallback_question(criterion)
     except Exception as e:
         # Log the error and provide a fallback question
         print(f"[sessions.get_next_question] AI service error: {e}")
@@ -227,7 +156,7 @@ async def get_next_question(session_id: str):
                 "où en êtes-vous aujourd'hui?"
             )
         else:
-            question_text = generate_smart_fallback_question(criterion, question_count + 1)
+            question_text = generate_smart_fallback_question(criterion)
     
     # Save question
     question_doc = {
@@ -323,7 +252,7 @@ async def submit_answer(session_id: str, answer_data: AnswerCreate):
             explanation = "Merci pour cette réponse détaillée."
             ai_reaction = "Très bien, j'ai bien noté. Continuons!"
             # Use smart question generator
-            next_question_text = generate_smart_fallback_question(next_criterion, len(history) + 2)
+            next_question_text = generate_smart_fallback_question(next_criterion)
     else:
         # Last question - just evaluate
         score = 2  # Default score
@@ -402,7 +331,7 @@ async def submit_answer(session_id: str, answer_data: AnswerCreate):
 
 @router.get("/{session_id}/results", response_model=SessionResults)
 async def get_results(session_id: str):
-    """Get session results with scores and recommendations"""
+    """Get session results with scores and recommendations using the official scoring methodology"""
     db = get_database()
     
     # Get session
@@ -425,83 +354,44 @@ async def get_results(session_id: str):
         if company:
             company_name = company["name"]
     
-    # Get all answers
-    answers = await db.answers.find({"session_id": session_id}).to_list(length=100)
+    # Calculate complete results using the official scoring methodology
+    results = await calculate_complete_results(session_id)
     
-    # Calculate scores by dimension
-    dimensions = await db.dimensions.find().to_list(length=10)
-    dimension_scores = []
-    total_score = 0
-    
-    for dim in dimensions:
-        dim_answers = [a for a in answers if a["criterion_id"].startswith(dim["code"])]
-        if dim_answers:
-            dim_score = sum(a["score"] for a in dim_answers) / len(dim_answers)
-            total_score += dim_score
-            
-            dimension_scores.append(DimensionScore(
-                dimension_code=dim["code"],
-                dimension_name=dim["name"],
-                score=round(dim_score, 2),
-                pillar_scores=[]  # TODO: Calculate pillar scores
-            ))
-    
-    # Calculate global score
-    global_score = round((total_score / len(dimensions)) if dimensions else 0, 2)
-    percentage = (global_score / 3) * 100
-    
-    # Determine maturity profile
-    if percentage <= 25:
-        profile = MaturityProfile(
-            level="beginner",
-            percentage=percentage,
-            description="Débutant - Phase d'initiation digitale"
+    # Convert dimension scores to DimensionScore schema
+    dimension_scores = [
+        DimensionScore(
+            dimension_code=dim["dimension_code"],
+            dimension_name=dim["dimension_name"],
+            score=dim["score"],
+            pillar_scores=dim["pillar_scores"],
+            answered_count=dim["answered_count"]
         )
-    elif percentage <= 50:
-        profile = MaturityProfile(
-            level="emergent",
-            percentage=percentage,
-            description="Émergent - Digitalisation en cours"
-        )
-    elif percentage <= 75:
-        profile = MaturityProfile(
-            level="challenger",
-            percentage=percentage,
-            description="Challenger - Transformation avancée"
-        )
-    else:
-        profile = MaturityProfile(
-            level="leader",
-            percentage=percentage,
-            description="Leader - Excellence digitale"
-        )
-    
-    # Generate gaps and recommendations (simplified)
-    gaps = [
-        f"Amélioration nécessaire en {dim.dimension_name}"
-        for dim in dimension_scores
-        if dim.score < 2
+        for dim in results["dimension_scores"]
     ]
     
-    recommendations = [
-        "Développer une stratégie digitale claire",
-        "Former les équipes aux outils digitaux",
-        "Investir dans l'infrastructure technologique"
-    ]
+    # Convert maturity profile to MaturityProfile schema
+    profile = MaturityProfile(
+        level=results["maturity_profile"]["level"],
+        percentage=results["maturity_profile"]["percentage"],
+        description=results["maturity_profile"]["description"]
+    )
+    
+    # Format gaps as strings
+    gaps = [gap["gap_description"] for gap in results["gaps"]]
     
     return SessionResults(
         session_id=session_id,
         company_name=company_name,
-        global_score=global_score,
+        global_score=results["global_score"],
         maturity_profile=profile,
         dimension_scores=dimension_scores,
         gaps=gaps,
-        recommendations=recommendations
+        recommendations=results["recommendations"]
     )
 
 @router.get("/{session_id}/download-pdf")
 async def download_pdf_report(session_id: str):
-    """Generate and download PDF report"""
+    """Generate and download PDF report using the official scoring methodology"""
     db = get_database()
     
     # Get session
@@ -522,57 +412,35 @@ async def download_pdf_report(session_id: str):
         if company:
             company_name = company["name"]
     
-    # Get all answers
-    answers = await db.answers.find({"session_id": session_id}).to_list(length=100)
+    # Calculate complete results using the official scoring methodology
+    results = await calculate_complete_results(session_id)
     
-    # Calculate scores by dimension
-    dimensions = await db.dimensions.find().to_list(length=10)
-    dimension_scores = []
-    total_score = 0
-    
-    for dim in dimensions:
-        dim_answers = [a for a in answers if a["criterion_id"].startswith(dim["code"])]
-        if dim_answers:
-            dim_score = sum(a["score"] for a in dim_answers) / len(dim_answers)
-            total_score += dim_score
-            
-            dimension_scores.append({
-                "dimension_code": dim["code"],
-                "dimension_name": dim["name"],
-                "score": round(dim_score, 2),
-                "avg_score": round(dim_score, 2),
-                "answered_count": len(dim_answers)
-            })
-    
-    # Calculate global score
-    global_score = round((total_score / len(dimensions)) if dimensions else 0, 2)
-    percentage = (global_score / 3) * 100
-    
-    # Determine maturity level
-    if percentage <= 25:
-        maturity_level = "Débutant - Phase d'initiation digitale"
-    elif percentage <= 50:
-        maturity_level = "Émergent - Digitalisation en cours"
-    elif percentage <= 75:
-        maturity_level = "Challenger - Transformation avancée"
-    else:
-        maturity_level = "Leader - Excellence digitale"
+    # Format dimension scores for PDF generation
+    dimension_scores = [
+        {
+            "dimension_code": dim["dimension_code"],
+            "dimension_name": dim["dimension_name"],
+            "score": dim["score"],
+            "avg_score": dim["score"],
+            "percentage": dim["percentage"],
+            "answered_count": dim["answered_count"],
+            "pillar_scores": dim["pillar_scores"]
+        }
+        for dim in results["dimension_scores"]
+    ]
     
     # Generate advantages and disadvantages
     advantages, disadvantages = generate_advantages_disadvantages(dimension_scores)
     
-    # Generate detailed recommendations
-    recommendations = generate_detailed_recommendations(dimension_scores, global_score)
-    
     # Generate PDF
     pdf_bytes = generate_diagnostic_pdf(
         company_name=company_name,
-        global_score=global_score,
-        maturity_level=maturity_level,
+        global_score=results["global_score"],
+        maturity_level=results["maturity_profile"]["description"],
         dimension_scores=dimension_scores,
         advantages=advantages,
         disadvantages=disadvantages,
-        recommendations=recommendations,
+        recommendations=results["recommendations"],
         session_id=session_id
     )
     
@@ -586,3 +454,65 @@ async def download_pdf_report(session_id: str):
             "Content-Disposition": f"attachment; filename=diagnostic_report_{session_id}.pdf"
         }
     )
+
+@router.get("/{session_id}/export-json")
+async def export_json_results(session_id: str):
+    """Export complete diagnostic results as JSON"""
+    db = get_database()
+    
+    # Get session
+    session = await db.sessions.find_one({"_id": ObjectId(session_id)})
+    
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+    
+    # Get company info
+    company_info = {}
+    if "company_info" in session:
+        company_info = session["company_info"]
+    elif "company_id" in session:
+        company = await db.companies.find_one({"_id": ObjectId(session["company_id"])})
+        if company:
+            company_info = {
+                "name": company["name"],
+                "sector": company.get("sector", ""),
+                "size": company.get("size", "")
+            }
+    
+    # Calculate complete results
+    results = await calculate_complete_results(session_id)
+    
+    # Get all answers for detailed export
+    answers = await db.answers.find({"session_id": session_id}).to_list(length=100)
+    answers_export = [
+        {
+            "criterion_id": ans["criterion_id"],
+            "user_text": ans["user_text"],
+            "score": ans["score"],
+            "explanation": ans.get("explanation", ""),
+            "ai_reaction": ans.get("ai_reaction", "")
+        }
+        for ans in answers
+    ]
+    
+    # Compile complete export
+    export_data = {
+        "session_id": session_id,
+        "company_info": company_info,
+        "diagnostic_date": session["created_at"].isoformat() if "created_at" in session else None,
+        "completion_date": session["completed_at"].isoformat() if session.get("completed_at") else None,
+        "results": {
+            "global_score": results["global_score"],
+            "global_percentage": results["global_percentage"],
+            "maturity_profile": results["maturity_profile"],
+            "dimension_scores": results["dimension_scores"],
+            "gaps": results["gaps"],
+            "recommendations": results["recommendations"]
+        },
+        "detailed_answers": answers_export
+    }
+    
+    return export_data

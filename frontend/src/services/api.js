@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000';
+// Use environment variable or fallback to localhost for development
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 // Create axios instance
 const api = axios.create({
@@ -57,8 +58,8 @@ export const sessionAPI = {
 
   create: async (companyId) => {
     console.log('Creating session for company:', companyId);
-    const response = await api.post('/sessions', null, {
-      params: { company_id: companyId }
+    const response = await api.post('/sessions', {
+      company_id: companyId
     });
     console.log('Session created:', response.data);
     return response.data;

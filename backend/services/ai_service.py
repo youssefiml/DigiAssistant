@@ -121,7 +121,8 @@ def generate_smart_fallback_reaction(score: int) -> str:
         0: [
             "Je comprends, vous débutez dans ce domaine.",
             "C'est un point à développer pour l'avenir.",
-            "Pas de problème, c'est une opportunité d'amélioration."
+            "Pas de problème, c'est une opportunité d'amélioration.",
+            "C'est une bonne chose de commencer par quelque chose."
         ],
         1: [
             "Bien, vous avez posé les premières bases!",
@@ -233,19 +234,45 @@ Return JSON (all text in French): {
   "next_question": "question conversationnelle en français pour le prochain critère"
 }"""
 
-async def formulate_first_question(criterion_text: str) -> str:
+async def formulate_first_question(
+    criterion_text: str, 
+    company_name: str = None, 
+    sector: str = None, 
+    size: str = None
+) -> str:
     """Generate the first question of the diagnostic"""
+    
+    # Build company context string
+    company_context = ""
+    if company_name:
+        company_context = f"L'entreprise s'appelle {company_name}."
+        if sector:
+            company_context += f" Elle évolue dans le secteur {sector}."
+        if size:
+            company_context += f" C'est une entreprise de taille {size}."
+        company_context += " "
+    
     # Use fallback if no API key
     if not openai_client and not gemini_client:
+        greeting = f"Bonjour! Je suis votre conseiller digital."
+        if company_name:
+            greeting = f"Bonjour {company_name}! Je suis votre conseiller digital."
         return (
-            f"Bonjour! Je suis votre conseiller digital. "
+            f"{greeting} "
             f"Commençons par comprendre votre situation actuelle. "
             f"Concernant {criterion_text.lower()}, "
             f"où en êtes-vous aujourd'hui?"
         )
     
     # Direct prompt - Gemini works better with simple, direct requests
-    full_prompt = f"Créez une question d'accueil amicale en français pour un diagnostic de maturité digitale. Le sujet est: {criterion_text}. Soyez conversationnel et professionnel (2-3 phrases maximum)."
+    context_part = f"{company_context}" if company_context else ""
+    full_prompt = (
+        f"Créez une question d'accueil amicale en français pour un diagnostic de maturité digitale. "
+        f"{context_part}"
+        f"Le sujet de la première question est: {criterion_text}. "
+        f"Si le nom de l'entreprise est mentionné, utilisez-le dans la question. "
+        f"Soyez conversationnel et professionnel (2-3 phrases maximum)."
+    )
     
     # Try Gemini first if available and configured
     if gemini_client and (settings.AI_PROVIDER == "gemini" or not openai_client):
@@ -307,7 +334,16 @@ async def formulate_first_question(criterion_text: str) -> str:
     if openai_client:
         try:
             print(f"[AI] Calling OpenAI API for first question...")
-            prompt = f"First criterion: '{criterion_text}'\n\nYour friendly welcome question:"
+            context_info = ""
+            if company_name:
+                context_info = f"Company: {company_name}"
+                if sector:
+                    context_info += f", Sector: {sector}"
+                if size:
+                    context_info += f", Size: {size}"
+                context_info += "\n"
+            
+            prompt = f"{context_info}First criterion: '{criterion_text}'\n\nYour friendly welcome question (in French, mention the company name if provided):"
             response = await openai_client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
@@ -325,8 +361,11 @@ async def formulate_first_question(criterion_text: str) -> str:
     
     # If both fail, use intelligent fallback
     print(f"[AI] Both providers failed, using intelligent fallback")
+    greeting = "Bonjour! Je suis votre conseiller digital."
+    if company_name:
+        greeting = f"Bonjour {company_name}! Je suis votre conseiller digital."
     return (
-        f"Bonjour! Je suis votre conseiller digital. "
+        f"{greeting} "
         f"Commençons par comprendre votre situation actuelle. "
         f"Concernant {criterion_text.lower()}, "
         f"où en êtes-vous aujourd'hui?"
@@ -336,9 +375,23 @@ async def evaluate_and_generate_next(
     conversation_history: List[Dict[str, Any]],
     current_answer: str,
     current_criterion: Dict[str, Any],
-    next_criterion: Dict[str, Any]
+    next_criterion: Dict[str, Any],
+    company_name: str = None,
+    sector: str = None,
+    size: str = None
 ) -> Dict[str, Any]:
     """Evaluate current answer and generate next question"""
+    
+    # Build company context
+    company_context = ""
+    if company_name:
+        company_context = f"**COMPANY INFORMATION:**\n"
+        company_context += f"- Name: {company_name}\n"
+        if sector:
+            company_context += f"- Sector: {sector}\n"
+        if size:
+            company_context += f"- Size: {size}\n"
+        company_context += "\n"
     
     # Build conversation context
     history_text = "\n".join([
@@ -356,7 +409,7 @@ async def evaluate_and_generate_next(
     ])
     
     prompt = f"""
-**CONVERSATION SO FAR:**
+{company_context}**CONVERSATION SO FAR:**
 {history_text}
 
 **USER'S LATEST ANSWER:**
@@ -376,6 +429,7 @@ async def evaluate_and_generate_next(
 1. Score the user's answer (0-3) based on the current criterion options
 2. Write an empathetic reaction acknowledging what they shared
 3. Formulate a natural, conversational question for the NEXT criterion that references previous context when relevant
+4. Remember the company name and context throughout the conversation
 
 Remember: You're having a conversation, not filling out a form!
 """

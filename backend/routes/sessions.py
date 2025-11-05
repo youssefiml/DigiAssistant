@@ -132,13 +132,33 @@ async def get_next_question(session_id: str):
     # Check if this is the first question
     question_count = await db.questions.count_documents({"session_id": session_id})
     
+    # Get company information for first question
+    company_name = None
+    sector = None
+    size = None
+    if "company_info" in session:
+        company_name = session["company_info"].get("name")
+        sector = session["company_info"].get("sector")
+        size = session["company_info"].get("size")
+    elif "company_id" in session:
+        company = await db.companies.find_one({"_id": ObjectId(session["company_id"])})
+        if company:
+            company_name = company.get("name")
+            sector = company.get("sector")
+            size = company.get("size")
+    
     # Initialize question_text
     question_text = None
     
     try:
         if question_count == 0:
-            # Generate first question using AI
-            question_text = await formulate_first_question(criterion["criterion_text"])
+            # Generate first question using AI with company information
+            question_text = await formulate_first_question(
+                criterion["criterion_text"],
+                company_name=company_name,
+                sector=sector,
+                size=size
+            )
         else:
             # This shouldn't happen - questions are generated when submitting answers
             # But provide a fallback just in case
@@ -149,8 +169,11 @@ async def get_next_question(session_id: str):
         traceback.print_exc()
         # Use smart fallback question generator
         if question_count == 0:
+            greeting = "Bonjour! Je suis votre conseiller digital."
+            if company_name:
+                greeting = f"Bonjour {company_name}! Je suis votre conseiller digital."
             question_text = (
-                "Bonjour! Je suis votre conseiller digital. "
+                f"{greeting} "
                 "Commençons par comprendre votre situation actuelle. "
                 f"Concernant {criterion['criterion_text'].lower()}, "
                 "où en êtes-vous aujourd'hui?"
@@ -219,6 +242,21 @@ async def submit_answer(session_id: str, answer_data: AnswerCreate):
         for ans in previous_answers
     ]
     
+    # Get company information for context
+    company_name = None
+    sector = None
+    size = None
+    if "company_info" in session:
+        company_name = session["company_info"].get("name")
+        sector = session["company_info"].get("sector")
+        size = session["company_info"].get("size")
+    elif "company_id" in session:
+        company = await db.companies.find_one({"_id": ObjectId(session["company_id"])})
+        if company:
+            company_name = company.get("name")
+            sector = company.get("sector")
+            size = company.get("size")
+    
     # Determine next criterion
     next_criterion_id = current_criterion.get("next_linear")
     if not next_criterion_id:
@@ -234,7 +272,10 @@ async def submit_answer(session_id: str, answer_data: AnswerCreate):
                 conversation_history=history,
                 current_answer=answer_data.user_text,
                 current_criterion=current_criterion,
-                next_criterion=next_criterion
+                next_criterion=next_criterion,
+                company_name=company_name,
+                sector=sector,
+                size=size
             )
             
             score = ai_response["evaluation"]["score"]

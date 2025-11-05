@@ -133,7 +133,15 @@ export default function DiagnosticPage() {
       <header style={{ background: 'var(--white)', boxShadow: 'var(--shadow-md)', padding: '0.75rem 2rem', borderBottom: '2px solid var(--primary)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <MdDashboard style={{ fontSize: '1.5rem', color: 'var(--primary)' }} />
+            <img 
+              src="/logo.png" 
+              alt="Digitancy Logo" 
+              style={{ height: '3rem', width: 'auto' }} 
+              onError={(e) => {
+                // Fallback if logo doesn't exist
+                e.target.style.display = 'none';
+              }}
+            />
             <div>
               <h1 style={{ fontSize: '1.125rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '0.125rem' }}>
                 Diagnostic Digital

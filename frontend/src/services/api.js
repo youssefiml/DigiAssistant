@@ -1,7 +1,9 @@
 import axios from 'axios';
 
-// Use environment variable or fallback to localhost for development
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'web-production-34558.up.railway.app';
+// Use environment variable or fallback to proxy for development
+// In development, use '/api' to leverage Vite proxy
+// In production, use the full Railway URL with https://
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '/api' : 'https://web-production-34558.up.railway.app');
 
 // Create axios instance
 const api = axios.create({

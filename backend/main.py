@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from config.settings import settings
-from config.database import connect_to_mongo, close_mongo_connection
+from config.database import connect_to_mongo, close_mongo_connection, get_database
 from routes import company, sessions
+from seed_database import seed_database, DIMENSIONS, PILLARS, CRITERIA
 
 app = FastAPI(
     title="DigiAssistant API",
@@ -28,6 +29,20 @@ app.add_middleware(
 async def startup_event():
     try:
         await connect_to_mongo()
+        
+        # Auto-seed database if criteria are missing
+        try:
+            db = get_database()
+            criteria_count = await db.criteria.count_documents({})
+            if criteria_count == 0:
+                print("🌱 Database is empty. Auto-seeding diagnostic criteria...")
+                await auto_seed_database()
+            else:
+                print(f"✅ Database already seeded with {criteria_count} criteria")
+        except Exception as seed_error:
+            print(f"⚠️ Could not check/seed database: {seed_error}")
+            # Don't fail startup if seeding fails, but log it
+        
         print("🚀 DigiAssistant API is running!")
     except Exception as e:
         error_msg = str(e)
@@ -77,6 +92,50 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+async def auto_seed_database():
+    """Auto-seed database with diagnostic criteria"""
+    db = get_database()
+    
+    print("🌱 Auto-seeding database...")
+    
+    # Clear existing data
+    await db.dimensions.delete_many({})
+    await db.pillars.delete_many({})
+    await db.criteria.delete_many({})
+    
+    # Insert dimensions
+    await db.dimensions.insert_many(DIMENSIONS)
+    print(f"   ✓ Inserted {len(DIMENSIONS)} dimensions")
+    
+    # Insert pillars
+    await db.pillars.insert_many(PILLARS)
+    print(f"   ✓ Inserted {len(PILLARS)} pillars")
+    
+    # Insert criteria
+    await db.criteria.insert_many(CRITERIA)
+    print(f"   ✓ Inserted {len(CRITERIA)} criteria")
+    
+    print("✅ Auto-seeding completed!")
+
+@app.post("/admin/seed")
+async def manual_seed_database():
+    """Manually seed the database (admin endpoint)"""
+    try:
+        db = get_database()
+        await auto_seed_database()
+        criteria_count = await db.criteria.count_documents({})
+        return {
+            "message": "Database seeded successfully",
+            "dimensions": len(DIMENSIONS),
+            "pillars": len(PILLARS),
+            "criteria": criteria_count
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to seed database: {str(e)}"
+        )
 
 # Include Routers
 app.include_router(company.router)

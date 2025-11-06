@@ -50,3 +50,7 @@ frontend/.env
 # API Keys
 *.key
 *.pem
+
+# Railway deployment notes
+*RAILWAY*.md
+*railway*.md

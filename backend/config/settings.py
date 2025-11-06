@@ -45,7 +45,10 @@ class Settings(BaseSettings):
     AI_PROVIDER: str = "gemini"  # Options: "openai", "gemini", "fallback"
     
     # CORS
-    CORS_ORIGINS: str = "http://localhost:5173"
+    # Allow both local development and production frontend
+    # Can be overridden via CORS_ORIGINS environment variable
+    # Format: comma-separated list of origins
+    CORS_ORIGINS: str = "https://digi-assistant-v1.vercel.app"
     
     class Config:
         env_file = ".env"  # Automatically loads from backend/.env file

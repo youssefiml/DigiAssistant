@@ -139,6 +139,98 @@ def generate_diagnostic_pdf(
     story.append(dimension_table)
     story.append(Spacer(1, 0.3*inch))
     
+    # Detailed Diagnostic Table - Dimensions and Pillars
+    story.append(Paragraph("Tableau Détaillé du Diagnostic", heading_style))
+    story.append(Spacer(1, 0.1*inch))
+    
+    # Create comprehensive diagnostic table
+    diagnostic_data = [['Dimension', 'Pilier', 'Score', 'Max', '%', 'Niveau']]
+    
+    for dim in dimension_scores:
+        dim_name = dim['dimension_name']
+        dim_code = dim.get('dimension_code', '')
+        pillar_scores = dim.get('pillar_scores', [])
+        
+        if pillar_scores:
+            # Add rows for each pillar
+            for i, pillar in enumerate(pillar_scores):
+                pillar_name = pillar.get('pillar_name', f"P{i+1}")
+                pillar_score = pillar.get('score', 0)
+                max_score = pillar.get('max_score', 9)
+                percentage = pillar.get('percentage', 0)
+                level = get_pillar_level(percentage)
+                
+                # Only show dimension name in first row, make it bold
+                if i == 0:
+                    dim_display = f"<b>{dim_name}</b>"
+                else:
+                    dim_display = ""
+                diagnostic_data.append([
+                    dim_display,
+                    pillar_name,
+                    f"{pillar_score:.1f}",
+                    f"{max_score}",
+                    f"{percentage:.0f}%",
+                    level
+                ])
+        else:
+            # Fallback if pillar_scores not available
+            dim_score = dim.get('score', dim.get('avg_score', 0))
+            dim_percentage = dim.get('percentage', (dim_score / 3) * 100)
+            level = get_maturity_label(dim_score)
+            diagnostic_data.append([
+                dim_name,
+                "N/A",
+                f"{dim_score:.1f}",
+                "3",
+                f"{dim_percentage:.0f}%",
+                level
+            ])
+    
+    # Calculate column widths
+    col_widths = [2.2*inch, 2*inch, 0.6*inch, 0.5*inch, 0.7*inch, 1*inch]
+    
+    diagnostic_table = Table(diagnostic_data, colWidths=col_widths, repeatRows=1)
+    diagnostic_table.setStyle(TableStyle([
+        # Header row
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        
+        # Data rows
+        ('ALIGN', (0, 1), (0, -1), 'LEFT'),  # Dimension column - left align
+        ('ALIGN', (1, 1), (1, -1), 'LEFT'),  # Pillar column - left align
+        ('ALIGN', (2, 1), (-1, -1), 'CENTER'),  # Score columns - center align
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        
+        # Grid and colors
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#d1d5db')),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9fafb')]),
+    ]))
+    
+    story.append(diagnostic_table)
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Add legend for pillar levels
+    legend_text = """
+    <b>Légende des Niveaux:</b><br/>
+    <b>Excellent (76-100%):</b> Niveau de maturité avancé<br/>
+    <b>Très Bon (51-75%):</b> Bonne maîtrise avec potentiel d'optimisation<br/>
+    <b>Bon (26-50%):</b> Bases solides en développement<br/>
+    <b>Moyen (1-25%):</b> Démarrage avec opportunités d'amélioration<br/>
+    <b>À Améliorer (0%):</b> Besoin d'action prioritaire
+    """
+    story.append(Paragraph(legend_text, body_style))
+    story.append(Spacer(1, 0.3*inch))
+    
     # Page Break
     story.append(PageBreak())
     
@@ -205,6 +297,19 @@ def get_maturity_label(score: float) -> str:
     elif score >= 1.5:
         return "Bon"
     elif score >= 1.0:
+        return "Moyen"
+    else:
+        return "À Améliorer"
+
+def get_pillar_level(percentage: float) -> str:
+    """Get maturity level based on percentage for pillars"""
+    if percentage >= 76:
+        return "Excellent"
+    elif percentage >= 51:
+        return "Très Bon"
+    elif percentage >= 26:
+        return "Bon"
+    elif percentage >= 1:
         return "Moyen"
     else:
         return "À Améliorer"

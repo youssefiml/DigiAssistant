@@ -27,7 +27,14 @@ def generate_diagnostic_pdf(
     
     # Create PDF in memory
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=A4, 
+        topMargin=0.5*inch, 
+        bottomMargin=0.5*inch,
+        leftMargin=0.5*inch,
+        rightMargin=0.5*inch
+    )
     
     # Container for PDF elements
     story = []
@@ -143,8 +150,42 @@ def generate_diagnostic_pdf(
     story.append(Paragraph("Tableau Détaillé du Diagnostic", heading_style))
     story.append(Spacer(1, 0.1*inch))
     
-    # Create comprehensive diagnostic table
-    diagnostic_data = [['Dimension', 'Pilier', 'Score', 'Max', '%', 'Niveau']]
+    # Create comprehensive diagnostic table with proper text wrapping
+    # Use Paragraph objects for proper text handling
+    cell_style = ParagraphStyle(
+        'TableCell',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=10,
+        alignment=TA_LEFT
+    )
+    
+    cell_style_center = ParagraphStyle(
+        'TableCellCenter',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=10,
+        alignment=TA_CENTER
+    )
+    
+    cell_style_bold = ParagraphStyle(
+        'TableCellBold',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=10,
+        alignment=TA_LEFT,
+        fontName='Helvetica-Bold'
+    )
+    
+    # Build table data with Paragraph objects for proper wrapping
+    diagnostic_data = [[
+        Paragraph('Dimension', cell_style_center),
+        Paragraph('Pilier', cell_style_center),
+        Paragraph('Score', cell_style_center),
+        Paragraph('Max', cell_style_center),
+        Paragraph('%', cell_style_center),
+        Paragraph('Niveau', cell_style_center)
+    ]]
     
     for dim in dimension_scores:
         dim_name = dim['dimension_name']
@@ -162,16 +203,17 @@ def generate_diagnostic_pdf(
                 
                 # Only show dimension name in first row, make it bold
                 if i == 0:
-                    dim_display = f"<b>{dim_name}</b>"
+                    dim_cell = Paragraph(f"<b>{dim_name}</b>", cell_style_bold)
                 else:
-                    dim_display = ""
+                    dim_cell = Paragraph("", cell_style)
+                
                 diagnostic_data.append([
-                    dim_display,
-                    pillar_name,
-                    f"{pillar_score:.1f}",
-                    f"{max_score}",
-                    f"{percentage:.0f}%",
-                    level
+                    dim_cell,
+                    Paragraph(pillar_name, cell_style),
+                    Paragraph(f"{pillar_score:.1f}", cell_style_center),
+                    Paragraph(f"{max_score}", cell_style_center),
+                    Paragraph(f"{percentage:.0f}%", cell_style_center),
+                    Paragraph(level, cell_style_center)
                 ])
         else:
             # Fallback if pillar_scores not available
@@ -179,36 +221,48 @@ def generate_diagnostic_pdf(
             dim_percentage = dim.get('percentage', (dim_score / 3) * 100)
             level = get_maturity_label(dim_score)
             diagnostic_data.append([
-                dim_name,
-                "N/A",
-                f"{dim_score:.1f}",
-                "3",
-                f"{dim_percentage:.0f}%",
-                level
+                Paragraph(dim_name, cell_style_bold),
+                Paragraph("N/A", cell_style_center),
+                Paragraph(f"{dim_score:.1f}", cell_style_center),
+                Paragraph("3", cell_style_center),
+                Paragraph(f"{dim_percentage:.0f}%", cell_style_center),
+                Paragraph(level, cell_style_center)
             ])
     
-    # Calculate column widths
-    col_widths = [2.2*inch, 2*inch, 0.6*inch, 0.5*inch, 0.7*inch, 1*inch]
+    # Calculate column widths to fit A4 page (8.27 inches - margins)
+    # Total available width: ~7.27 inches (8.27 - 0.5*2 margins)
+    # Adjusted to ensure proper fit
+    col_widths = [2.3*inch, 2.0*inch, 0.55*inch, 0.5*inch, 0.55*inch, 0.87*inch]
     
-    diagnostic_table = Table(diagnostic_data, colWidths=col_widths, repeatRows=1)
+    # Create table with split capability for long tables
+    diagnostic_table = Table(
+        diagnostic_data, 
+        colWidths=col_widths, 
+        repeatRows=1,
+        splitByRow=1,  # Allow splitting across pages
+        splitInRow=0   # Don't split within a row
+    )
     diagnostic_table.setStyle(TableStyle([
         # Header row
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
         
         # Data rows
         ('ALIGN', (0, 1), (0, -1), 'LEFT'),  # Dimension column - left align
         ('ALIGN', (1, 1), (1, -1), 'LEFT'),  # Pillar column - left align
         ('ALIGN', (2, 1), (-1, -1), 'CENTER'),  # Score columns - center align
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 9),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('VALIGN', (0, 1), (-1, -1), 'MIDDLE'),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 5),
+        ('TOPPADDING', (0, 1), (-1, -1), 5),
+        ('LEFTPADDING', (0, 1), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 1), (-1, -1), 4),
         
         # Grid and colors
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#d1d5db')),

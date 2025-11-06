@@ -30,9 +30,36 @@ async def startup_event():
         await connect_to_mongo()
         print("🚀 DigiAssistant API is running!")
     except Exception as e:
-        print(f"⚠️ Warning: Could not connect to MongoDB on startup: {e}")
-        print("⚠️ Application will continue but database operations may fail.")
-        # Don't raise - allow app to start even if DB is temporarily unavailable
+        error_msg = str(e)
+        print(f"❌ Failed to connect to MongoDB on startup: {e}")
+        print("\n" + "="*60)
+        print("⚠️  DATABASE CONNECTION REQUIRED")
+        print("="*60)
+        if "localhost" in error_msg or "127.0.0.1" in error_msg:
+            print("📝 For Railway deployment, set MONGODB_URL environment variable")
+            print("   to your MongoDB Atlas connection string (mongodb+srv://...)")
+            print("   Example: mongodb+srv://user:pass@cluster.mongodb.net/?retryWrites=true&w=majority")
+        print("="*60 + "\n")
+        # For production, we should fail fast - database is required
+        # Only allow app to continue in development mode
+        import os
+        # Check if we're in a production environment (Railway sets PORT, or we can check for PORT)
+        # Also check if MONGODB_URL is set but pointing to localhost (common mistake)
+        is_production = os.getenv("PORT") is not None or os.getenv("RAILWAY_ENVIRONMENT")
+        mongodb_url = os.getenv("MONGODB_URL", settings.MONGODB_URL)
+        is_localhost_db = "localhost" in mongodb_url or "127.0.0.1" in mongodb_url
+        
+        if is_production and is_localhost_db:
+            # Production environment but using localhost DB - this is wrong
+            raise RuntimeError(
+                "Production environment detected but MONGODB_URL points to localhost. "
+                "Set MONGODB_URL to your MongoDB Atlas connection string in Railway environment variables."
+            )
+        elif is_production:
+            # Production with non-localhost DB but connection failed - fail fast
+            raise RuntimeError("Database connection failed. Cannot start without database in production.")
+        else:
+            print("⚠️ Development mode: Continuing without database (operations will fail)")
 
 @app.on_event("shutdown")
 async def shutdown_event():

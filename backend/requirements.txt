@@ -10,3 +10,4 @@ google-generativeai
 openai
 reportlab
 pillow
+certifi

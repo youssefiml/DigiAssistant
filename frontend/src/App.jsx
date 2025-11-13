@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DashboardPage from './pages/DashboardPage';
+import FormPage from './pages/FormPage';
 import DiagnosticPage from './pages/DiagnosticPage';
 import ResultsPage from './pages/ResultsPage';
 
@@ -12,6 +13,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/form" element={<FormPage />} />
           <Route path="/diagnostic/:sessionId" element={<DiagnosticPage />} />
           <Route path="/diagnostic" element={<DiagnosticPage />} />
           <Route path="/results/:sessionId" element={<ResultsPage />} />

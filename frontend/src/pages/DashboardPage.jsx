@@ -1,13 +1,8 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { sessionAPI } from '../services/api';
 import { 
-  FaBuilding, 
-  FaIndustry, 
-  FaUsers, 
   FaRocket, 
   FaBullseye,
-  FaClipboardCheck,
+  FaUsers,
   FaLaptop,
   FaShieldAlt,
   FaCogs,
@@ -15,45 +10,12 @@ import {
   FaChartLine,
   FaAward,
   FaClock,
-  FaLightbulb
+  FaLightbulb,
+  FaClipboardCheck
 } from 'react-icons/fa';
-import { MdDashboard } from 'react-icons/md';
 
 export default function DashboardPage() {
-  const [companyName, setCompanyName] = useState('');
-  const [sector, setSector] = useState('');
-  const [size, setSize] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  
   const navigate = useNavigate();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const tempCompanyId = 'temp_' + Date.now();
-      localStorage.setItem('tempCompanyInfo', JSON.stringify({
-        id: tempCompanyId,
-        name: companyName,
-        sector,
-        size
-      }));
-      
-      const session = await sessionAPI.createWithTempCompany({
-        name: companyName,
-        sector,
-        size
-      });
-      
-      navigate(`/diagnostic/${session.session_id}`);
-    } catch (error) {
-      setError(error.response?.data?.detail || error.message || 'Erreur lors de la création');
-      setLoading(false);
-    }
-  };
 
   const universes = [
     { icon: <FaBullseye />, name: 'Strategy', description: 'Évaluez votre capacité à mener la transformation numérique' },
@@ -174,103 +136,47 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Form Section */}
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '0.75rem', padding: '2.5rem' }}>
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <FaBuilding style={{ fontSize: '3rem', color: 'rgb(180, 0, 60)', marginBottom: '1rem' }} />
-              <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: 'rgb(0, 77, 77)', marginBottom: '0.5rem' }}>
-                Commencer le diagnostic
-              </h2>
-              <p style={{ color: '#666', fontSize: '0.9375rem', lineHeight: '1.5' }}>
-                Commençons par quelques informations sur votre entreprise
-              </p>
-            </div>
-
-            {error && (
-              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div>
-                <label htmlFor="companyName" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: '600', color: '#000', marginBottom: '0.5rem' }}>
-                  <FaClipboardCheck style={{ color: 'rgb(180, 0, 60)', fontSize: '0.875rem' }} /> Nom de l'entreprise *
-                </label>
-                <input
-                  id="companyName"
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  required
-                  style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', fontSize: '0.9375rem', transition: 'border-color 0.15s ease', outline: 'none' }}
-                  placeholder="Ex: Acme Corporation"
-                  disabled={loading}
-                  onFocus={(e) => e.target.style.borderColor = 'rgb(0, 77, 77)'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="sector" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: '600', color: '#000', marginBottom: '0.5rem' }}>
-                  <FaIndustry style={{ color: 'rgb(180, 0, 60)', fontSize: '0.875rem' }} /> Secteur d'activité *
-                </label>
-                <select
-                  id="sector"
-                  value={sector}
-                  onChange={(e) => setSector(e.target.value)}
-                  required
-                  style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', fontSize: '0.9375rem', transition: 'border-color 0.15s ease', outline: 'none', background: 'white' }}
-                  disabled={loading}
-                  onFocus={(e) => e.target.style.borderColor = 'rgb(0, 77, 77)'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                >
-                  <option value="">Sélectionnez un secteur</option>
-                  <option value="Technologie">Technologie</option>
-                  <option value="Finance">Finance</option>
-                  <option value="Santé">Santé</option>
-                  <option value="Éducation">Éducation</option>
-                  <option value="Commerce">Commerce / Retail</option>
-                  <option value="Industrie">Industrie</option>
-                  <option value="Services">Services</option>
-                  <option value="Autre">Autre</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="size" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: '600', color: '#000', marginBottom: '0.5rem' }}>
-                  <FaUsers style={{ color: 'rgb(180, 0, 60)', fontSize: '0.875rem' }} /> Taille de l'entreprise *
-                </label>
-                <select
-                  id="size"
-                  value={size}
-                  onChange={(e) => setSize(e.target.value)}
-                  required
-                  style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', fontSize: '0.9375rem', transition: 'border-color 0.15s ease', outline: 'none', background: 'white' }}
-                  disabled={loading}
-                  onFocus={(e) => e.target.style.borderColor = 'rgb(0, 77, 77)'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                >
-                  <option value="">Sélectionnez une taille</option>
-                  <option value="1-10">1-10 employés</option>
-                  <option value="11-50">11-50 employés</option>
-                  <option value="51-200">51-200 employés</option>
-                  <option value="201-500">201-500 employés</option>
-                  <option value="500+">500+ employés</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                style={{ width: '100%', padding: '0.875rem 1.5rem', fontSize: '0.9375rem', fontWeight: '500', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: loading ? '#999' : 'rgb(180, 0, 60)', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.15s ease' }}
-                onMouseEnter={(e) => !loading && (e.currentTarget.style.background = 'rgb(150, 0, 50)')}
-                onMouseLeave={(e) => !loading && (e.currentTarget.style.background = 'rgb(180, 0, 60)')}
-              >
-                <FaRocket /> {loading ? 'Création en cours...' : 'Commencer le diagnostic'}
-              </button>
-            </form>
+        {/* Call to Action Section */}
+        <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '0.75rem', padding: '3rem 2.5rem' }}>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: 'rgb(0, 77, 77)', marginBottom: '1rem' }}>
+              Prêt à commencer ?
+            </h2>
+            <p style={{ color: '#666', fontSize: '1rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+              Remplissez le formulaire avec les informations de votre entreprise pour lancer le diagnostic
+            </p>
+            <button
+              onClick={() => navigate('/form')}
+              style={{ 
+                width: '100%', 
+                padding: '0.875rem 1.5rem', 
+                fontSize: '1rem', 
+                fontWeight: '600', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '0.75rem', 
+                background: 'rgb(180, 0, 60)', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '0.5rem', 
+                cursor: 'pointer', 
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 12px rgba(180, 0, 60, 0.25)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgb(150, 0, 50)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 16px rgba(180, 0, 60, 0.35)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgb(180, 0, 60)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(180, 0, 60, 0.25)';
+              }}
+            >
+              <FaRocket /> Commencer le diagnostic
+            </button>
           </div>
         </div>
       </div>

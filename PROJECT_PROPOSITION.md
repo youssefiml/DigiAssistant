@@ -379,3 +379,5 @@ FastAPI Application
 
 *This document outlines the complete scope, pages, and features of the DigiAssistant project. For technical details, refer to the README.md file in the repository.*
 
+
+

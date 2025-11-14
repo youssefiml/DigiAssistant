@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config.settings import settings
 from config.database import connect_to_mongo, close_mongo_connection, get_database
 from routes import company, sessions
-from seed_database import seed_database, DIMENSIONS, PILLARS, CRITERIA
+from seed_database import DIMENSIONS, PILLARS, CRITERIA
 
 app = FastAPI(
     title="DigiAssistant API",
@@ -35,7 +35,7 @@ async def startup_event():
             db = get_database()
             criteria_count = await db.criteria.count_documents({})
             if criteria_count == 0:
-                print("🌱 Database is empty. Auto-seeding diagnostic criteria...")
+                print("Database is empty. Auto-seeding diagnostic criteria...")
                 await auto_seed_database()
             else:
                 print(f"✅ Database already seeded with {criteria_count} criteria")

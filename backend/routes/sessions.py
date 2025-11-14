@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
-from models.schemas import Session, Question, Answer, AnswerCreate, SessionResults, MaturityProfile, DimensionScore
+from models.schemas import AnswerCreate, SessionResults, MaturityProfile, DimensionScore
 from config.database import get_database
 from services.ai_service import (
     formulate_first_question, 
@@ -8,11 +8,10 @@ from services.ai_service import (
     generate_smart_fallback_question,
     estimate_score_from_answer
 )
-from services.pdf_service import generate_diagnostic_pdf, generate_advantages_disadvantages, generate_detailed_recommendations
-from services.scoring_service import calculate_complete_results, calculate_dimension_scores
+from services.pdf_service import generate_diagnostic_pdf, generate_advantages_disadvantages
+from services.scoring_service import calculate_complete_results
 from bson import ObjectId
 from datetime import datetime
-from typing import List, Dict, Any
 import traceback
 import io
 

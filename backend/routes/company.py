@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from models.schemas import CompanyCreate, CompanyResponse
 from config.database import get_database
-from bson import ObjectId
 from datetime import datetime
 
 router = APIRouter(prefix="/company", tags=["Company"])

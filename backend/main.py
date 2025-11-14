@@ -13,7 +13,7 @@ app = FastAPI(
 
 # CORS Configuration
 # Log CORS origins for debugging
-print(f"🌐 CORS Origins configured: {settings.cors_origins_list}")
+print(f"CORS Origins configured: {settings.cors_origins_list}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -43,7 +43,7 @@ async def startup_event():
             print(f"⚠️ Could not check/seed database: {seed_error}")
             # Don't fail startup if seeding fails, but log it
         
-        print("🚀 DigiAssistant API is running!")
+        print("DigiAssistant API is running!")
     except Exception as e:
         error_msg = str(e)
         print(f"❌ Failed to connect to MongoDB on startup: {e}")
@@ -97,7 +97,7 @@ async def auto_seed_database():
     """Auto-seed database with diagnostic criteria"""
     db = get_database()
     
-    print("🌱 Auto-seeding database...")
+    print(" Auto-seeding database...")
     
     # Clear existing data
     await db.dimensions.delete_many({})

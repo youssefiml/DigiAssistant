@@ -46,9 +46,8 @@ export default function DiagnosticPage() {
       }]);
       setError('');
     } catch (err) {
-      console.error('Error loading first question:', err);
-      console.error('Error details:', err.response?.data);
-      setError('Erreur lors du chargement de la question: ' + (err.response?.data?.detail || err.message));
+      console.error('Erreur lors du chargement de la première question:', err.response?.data || err.message);
+      setError('Impossible de charger la question pour le moment. Merci de réessayer plus tard.');
     } finally {
       setLoading(false);
     }
@@ -114,12 +113,10 @@ export default function DiagnosticPage() {
           }]);
         }, 1000);
       }
-      
       setError('');
     } catch (err) {
-      console.error('Error submitting answer:', err);
-      console.error('Error details:', err.response?.data);
-      setError('Erreur lors de l\'envoi de la réponse: ' + (err.response?.data?.detail || err.message));
+      console.error('Erreur lors de l\'envoi de la réponse:', err.response?.data || err.message);
+      setError('Impossible d\'envoyer la réponse pour le moment. Merci de réessayer plus tard.');
     } finally {
       setLoading(false);
     }

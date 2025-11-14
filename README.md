@@ -3,7 +3,7 @@
 # DigiAssistant  
 **AI-Powered Digital Maturity Diagnostic**
 
-[Website](https://github.com/youssefiml/DigiAssistant) · [Issues](https://github.com/youssefiml/DigiAssistant/issues) · Demo on request
+[Website](https://digi-assistant-v1.vercel.app/) · [Issues](https://github.com/youssefiml/DigiAssistant/issues) · Demo on request
 
 </div>
 

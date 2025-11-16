@@ -11,7 +11,6 @@ import {
   FaCheckCircle,
   FaClock
 } from 'react-icons/fa';
-import { MdDashboard } from 'react-icons/md';
 
 export default function DiagnosticPage() {
   const { sessionId } = useParams();
@@ -127,23 +126,23 @@ export default function DiagnosticPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       {/* Header */}
-      <header style={{ background: 'var(--white)', boxShadow: 'var(--shadow-md)', padding: '0.75rem 2rem', borderBottom: '2px solid var(--primary)' }}>
+      <header style={{ background: 'var(--white)', boxShadow: 'var(--shadow-md)', padding: '0.5rem 1.25rem', borderBottom: '2px solid var(--primary)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <img 
               src="/logo.png" 
               alt="Digitancy Logo" 
-              style={{ height: '3rem', width: 'auto' }} 
+              style={{ height: '2rem', width: 'auto' }} 
               onError={(e) => {
                 // Fallback if logo doesn't exist
                 e.target.style.display = 'none';
               }}
             />
             <div>
-              <h1 style={{ fontSize: '1.125rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '0.125rem' }}>
+              <h1 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '0.125rem' }}>
                 Diagnostic Digital
               </h1>
-              <p style={{ fontSize: '0.8rem', color: 'var(--gray-600)', fontWeight: '500' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--gray-600)', fontWeight: '500' }}>
                 Question {progress.current + 1} / {progress.total}
               </p>
             </div>

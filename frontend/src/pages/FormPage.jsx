@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sessionAPI } from '../services/api';
-import { 
-  FaBuilding, 
+import {  
   FaIndustry, 
   FaUsers, 
   FaRocket,
   FaClipboardCheck
 } from 'react-icons/fa';
+import { FaBuildingUser } from 'react-icons/fa6';
 
 export default function FormPage() {
   const [companyName, setCompanyName] = useState('');
@@ -48,18 +48,19 @@ export default function FormPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#fafafa' }}>
       {/* Header */}
-      <header style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '1.5rem 0' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <header style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '0.75rem 0' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <img 
             src="/logo.png" 
             alt="DigiAssistant Logo" 
-            style={{ height: '3rem', width: 'auto' }} 
+            style={{ height: '2rem', width: 'auto' }} 
             onError={(e) => {
+              // Fallback if logo doesn't exist
               e.target.style.display = 'none';
             }}
           />
           <div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: '700', color: 'rgb(0, 77, 77)', marginBottom: '0.25rem' }}>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'rgb(0, 77, 77)', marginBottom: '0' }}>
               DigiAssistant
             </h1>
           </div>
@@ -70,7 +71,7 @@ export default function FormPage() {
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '4rem 2rem' }}>
         <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '0.75rem', padding: '2.5rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <FaBuilding style={{ fontSize: '3rem', color: 'rgb(180, 0, 60)', marginBottom: '1rem' }} />
+            <FaBuildingUser style={{ fontSize: '3rem', color: 'rgb(180, 0, 60)', marginBottom: '1rem' }} />
             <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: 'rgb(0, 77, 77)', marginBottom: '0.5rem' }}>
               Commencer le diagnostic
             </h2>

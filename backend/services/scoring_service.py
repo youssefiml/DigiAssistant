@@ -200,23 +200,65 @@ async def identify_gaps(dimension_scores: List[Dict[str, Any]], maturity_level: 
         List of gaps with dimension info and recommendations
     """
     target_pillar = TARGET_PILLAR_BY_PROFILE.get(maturity_level, 1)
+    
+    # Map maturity levels to French descriptions
+    maturity_descriptions = {
+        "beginner": "débutant",
+        "emergent": "émergent",
+        "challenger": "challenger",
+        "leader": "leader"
+    }
+    
     gaps = []
     
     for dim in dimension_scores:
         # Determine the highest pillar achieved in this dimension
         # A pillar is "achieved" if its percentage is >= 50%
         achieved_pillar = 0
+        achieved_pillar_name = "Aucun niveau atteint"
+        
         for pillar in dim["pillar_scores"]:
-            if pillar["percentage"] >= 50:
-                pillar_num = int(pillar["pillar_code"].replace("P", ""))
-                achieved_pillar = max(achieved_pillar, pillar_num)
+            if pillar.get("percentage", 0) >= 50:
+                pillar_code_str = pillar.get("pillar_code", "")
+                if pillar_code_str.startswith("P"):
+                    pillar_num = int(pillar_code_str.replace("P", ""))
+                    if pillar_num > achieved_pillar:
+                        achieved_pillar = pillar_num
+                        achieved_pillar_name = pillar.get("pillar_name", f"Niveau {pillar_num}")
+        
+        # Get target pillar name
+        target_pillar_name = None
+        for pillar in dim["pillar_scores"]:
+            pillar_code_str = pillar.get("pillar_code", "")
+            if pillar_code_str.startswith("P"):
+                pillar_num = int(pillar_code_str.replace("P", ""))
+                if pillar_num == target_pillar:
+                    target_pillar_name = pillar.get("pillar_name", f"Niveau {target_pillar}")
+                    break
+        
+        # Fallback if target pillar name not found
+        if target_pillar_name is None:
+            target_pillar_name = f"niveau {target_pillar}"
         
         # Check if there's a gap
         if achieved_pillar < target_pillar:
-            gap_description = (
-                f"{dim['dimension_name']}: Pilier atteint P{achieved_pillar}, "
-                f"cible P{target_pillar} pour le profil {maturity_level}"
-            )
+            # Create detailed, user-friendly gap description
+            if achieved_pillar == 0:
+                gap_description = (
+                    f"La dimension {dim['dimension_name']} nécessite une attention particulière. "
+                    f"Actuellement, aucun niveau de maturité n'est suffisamment développé dans cette dimension. "
+                    f"Pour correspondre à votre profil de maturité {maturity_descriptions.get(maturity_level, maturity_level)}, "
+                    f"il est recommandé d'atteindre au moins le niveau : {target_pillar_name}. "
+                    f"Cela implique de mettre en place les bases nécessaires pour développer cette dimension stratégique."
+                )
+            else:
+                gap_description = (
+                    f"Dans la dimension {dim['dimension_name']}, vous avez atteint le niveau : {achieved_pillar_name}. "
+                    f"Cependant, pour correspondre à votre profil de maturité {maturity_descriptions.get(maturity_level, maturity_level)}, "
+                    f"il est nécessaire d'atteindre le niveau : {target_pillar_name}. "
+                    f"Un renforcement de cette dimension vous permettra d'aligner votre niveau global de maturité digitale "
+                    f"et d'optimiser vos performances dans ce domaine clé."
+                )
             
             gaps.append({
                 "dimension_code": dim["dimension_code"],

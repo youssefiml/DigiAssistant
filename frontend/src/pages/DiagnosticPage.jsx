@@ -218,17 +218,37 @@ export default function DiagnosticPage() {
       </div>
 
       {/* Input */}
-      <div style={{ background: 'var(--white)', borderTop: '2px solid var(--gray-200)', padding: '1rem 2rem', boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.05)' }}>
+      <div style={{ background: 'var(--white)', borderTop: '2px solid var(--gray-200)', padding: '1rem 1rem 1.5rem', boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.05)' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           {error && (
-            <div style={{ marginBottom: '0.75rem', padding: '0.75rem', background: '#fee2e2', border: '2px solid #ef4444', borderRadius: '0.75rem', color: '#991b1b', fontSize: '0.875rem', fontWeight: '500' }}>
+            <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fee2e2', border: '2px solid #ef4444', borderRadius: '0.75rem', color: '#991b1b', fontSize: '0.875rem', fontWeight: '500' }}>
               {error}
             </div>
           )}
           
-          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <textarea
+          <form onSubmit={handleSubmit}>
+            <div style={{ 
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              background: '#ffffff',
+              border: '2px solid #e5e7eb',
+              borderRadius: '50px',
+              padding: '0.625rem 0.875rem',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+              transition: 'all 0.3s ease'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'var(--primary)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(99, 102, 241, 0.15)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = '#e5e7eb';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)';
+            }}
+            >
+              <input
+                type="text"
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -237,56 +257,105 @@ export default function DiagnosticPage() {
                     handleSubmit(e);
                   }
                 }}
-                placeholder="Décrivez votre réponse de manière détaillée..."
-                className="input-field"
+                placeholder="Votre réponse ici..."
                 style={{ 
-                  resize: 'vertical', 
-                  minHeight: '80px',
-                  fontSize: '0.95rem',
-                  paddingRight: '1.25rem',
-                  paddingBottom: '2rem'
+                  flex: 1,
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
+                  background: 'transparent',
+                  color: '#1f2937',
+                  padding: '0.5rem 0',
+                  fontFamily: 'inherit',
+                  minWidth: '0'
                 }}
                 disabled={loading}
               />
-              <div style={{ 
-                position: 'absolute', 
-                bottom: '0.5rem', 
-                right: '0.75rem', 
-                fontSize: '0.7rem', 
-                color: 'var(--gray-500)',
-                background: 'var(--white)',
-                padding: '0.2rem 0.4rem',
-                borderRadius: '0.375rem',
-                fontWeight: '500'
+              
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'clamp(0.375rem, 2vw, 0.75rem)',
+                marginLeft: 'clamp(0.5rem, 2vw, 1rem)',
+                flexShrink: 0
               }}>
-                {userInput.length} caractères
+                <div style={{ 
+                  fontSize: 'clamp(0.75rem, 2vw, 0.875rem)', 
+                  color: '#9ca3af',
+                  fontWeight: '500',
+                  display: window.innerWidth < 480 ? 'none' : 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}>
+                  ⌘ {userInput.length}
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={loading || !userInput.trim()}
+                  style={{ 
+                    width: 'clamp(40px, 10vw, 48px)',
+                    height: 'clamp(40px, 10vw, 48px)',
+                    borderRadius: '50%',
+                    background: loading || !userInput.trim() ? '#d1d5db' : '#111827',
+                    border: 'none',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: loading || !userInput.trim() ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease',
+                    fontSize: '1.25rem',
+                    boxShadow: loading || !userInput.trim() ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.2)',
+                    flexShrink: 0
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading && userInput.trim()) {
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                      e.currentTarget.style.background = 'var(--primary)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loading && userInput.trim()) {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.background = '#111827';
+                    }
+                  }}
+                >
+                  {loading ? (
+                    <div style={{ display: 'flex', gap: '0.125rem' }}>
+                      <span className="typing-dot" style={{ width: '3px', height: '3px' }} />
+                      <span className="typing-dot" style={{ width: '3px', height: '3px' }} />
+                      <span className="typing-dot" style={{ width: '3px', height: '3px' }} />
+                    </div>
+                  ) : (
+                    <svg 
+                      width="22" 
+                      height="22" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2.5" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 19V5M5 12l7-7 7 7"/>
+                    </svg>
+                  )}
+                </button>
               </div>
             </div>
-            <button
-              type="submit"
-              disabled={loading || !userInput.trim()}
-              className="btn-primary"
-              style={{ 
-                padding: '1rem 1.5rem', 
-                fontSize: '0.95rem', 
-                whiteSpace: 'nowrap', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.5rem',
-                minHeight: '3rem'
-              }}
-            >
-              <FaPaperPlane /> {loading ? 'Envoi...' : 'Envoyer'}
-            </button>
           </form>
           
           <div style={{ 
             marginTop: '0.75rem', 
             display: 'flex', 
+            flexDirection: window.innerWidth < 640 ? 'column' : 'row',
             justifyContent: 'space-between', 
-            alignItems: 'center',
-            fontSize: '0.75rem',
-            color: 'var(--gray-600)'
+            alignItems: window.innerWidth < 640 ? 'flex-start' : 'center',
+            gap: '0.5rem',
+            fontSize: 'clamp(0.625rem, 2vw, 0.75rem)',
+            color: '#9ca3af'
           }}>
             <p style={{ 
               fontWeight: '500', 
@@ -295,14 +364,14 @@ export default function DiagnosticPage() {
               gap: '0.375rem' 
             }}>
               <FaLightbulb style={{ color: 'var(--secondary)', fontSize: '0.875rem' }} />
-              Soyez précis et détaillé pour un meilleur diagnostic
+              Soyez précis et détaillé
             </p>
             <p style={{ 
               fontWeight: '500',
-              color: 'var(--gray-500)',
-              fontStyle: 'italic'
+              fontStyle: 'italic',
+              display: window.innerWidth < 480 ? 'none' : 'block'
             }}>
-              Entrée pour envoyer • Shift+Entrée pour nouvelle ligne
+              Entrée pour envoyer
             </p>
           </div>
         </div>

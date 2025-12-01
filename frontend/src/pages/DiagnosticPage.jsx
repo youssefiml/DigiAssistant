@@ -1,16 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { sessionAPI } from '../services/api';
-import { 
-  FaRobot, 
-  FaPaperPlane, 
-  FaLightbulb, 
-  FaChartBar, 
-  FaStar, 
-  FaRegStar,
-  FaCheckCircle,
-  FaClock
-} from 'react-icons/fa';
+import { FaPaperPlane, FaLightbulb } from 'react-icons/fa';
+import ChatMessage from '../components/ChatMessage';
+import TypingIndicator from '../components/TypingIndicator';
 
 export default function DiagnosticPage() {
   const { sessionId } = useParams();
@@ -124,254 +117,156 @@ export default function DiagnosticPage() {
   const progressPercentage = (progress.current / progress.total) * 100;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      {/* Header */}
-      <header style={{ background: 'var(--white)', boxShadow: 'var(--shadow-md)', padding: '0.5rem 1.25rem', borderBottom: '2px solid var(--primary)' }}>
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100vh',
+      background: 'linear-gradient(135deg, #ffffff 0%, #e0f2f1 50%, #ffffff 100%)'
+    }}>
+      {/* Header with Glass Effect */}
+      <header className="glass-header" style={{ 
+        padding: '1rem 1.5rem',
+        position: 'sticky',
+        top: 0,
+        zIndex: 40
+      }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <img 
               src="/logo.png" 
-              alt="Digitancy Logo" 
-              style={{ height: '2rem', width: 'auto' }} 
+              alt="DigiAssistant Logo" 
+              style={{ height: '2.5rem', width: 'auto' }} 
               onError={(e) => {
-                // Fallback if logo doesn't exist
                 e.target.style.display = 'none';
               }}
             />
             <div>
-              <h1 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '0.125rem' }}>
+              <h1 style={{ fontSize: '1.125rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '0.25rem' }}>
                 Diagnostic Digital
               </h1>
-              <p style={{ fontSize: '0.75rem', color: 'var(--gray-600)', fontWeight: '500' }}>
-                Question {progress.current + 1} / {progress.total}
+              <p style={{ fontSize: '0.875rem', color: 'var(--gray-600)', fontWeight: '500' }}>
+                Question <span style={{ color: 'var(--primary)', fontWeight: '700' }}>{progress.current + 1}</span> / {progress.total}
               </p>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--secondary)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <FaChartBar /> {Math.round(progressPercentage)}%
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--secondary)' }}>
+              {Math.round(progressPercentage)}%
             </div>
-            <div className="progress-bar" style={{ width: '150px' }}>
-              <div className="progress-fill" style={{ width: `${progressPercentage}%` }} />
+            <div style={{ 
+              width: '140px', 
+              height: '8px', 
+              background: 'rgba(0, 0, 0, 0.1)', 
+              borderRadius: '50px',
+              overflow: 'hidden'
+            }}>
+              <div style={{ 
+                width: `${progressPercentage}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%)',
+                transition: 'width 0.5s ease',
+                borderRadius: '50px'
+              }} />
             </div>
           </div>
         </div>
       </header>
 
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 1rem', background: 'var(--gray-50)' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Messages Container */}
+      <div style={{ 
+        flex: 1, 
+        overflowY: 'auto', 
+        padding: '2rem 1.5rem',
+      }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              style={{ display: 'flex', justifyContent: msg.type === 'user' ? 'flex-end' : 'flex-start' }}
-            >
-              <div className={msg.type === 'user' ? 'message-user' : msg.type === 'ai-feedback' ? 'message-feedback' : 'message-ai'}>
-                {msg.type === 'ai' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <FaRobot style={{ fontSize: '1.25rem', color: 'var(--primary)' }} />
-                    <span style={{ fontWeight: '600', color: 'var(--primary)', fontSize: '0.9rem' }}>Assistant Digital</span>
-                  </div>
-                )}
-                {msg.type === 'ai-feedback' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <FaCheckCircle style={{ fontSize: '1.25rem', color: 'var(--secondary)' }} />
-                    <span style={{ fontWeight: '600', color: 'var(--secondary)', fontSize: '0.9rem' }}>Feedback</span>
-                  </div>
-                )}
-                <div style={{ fontSize: '0.95rem', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
-                  {msg.content}
-                </div>
-                {msg.score !== undefined && (
-                  <div style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid var(--gray-300)', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--gray-700)' }}>
-                    <FaChartBar style={{ color: 'var(--secondary)' }} />
-                    Score: {msg.score}/3 
-                    {msg.score === 3 && <><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /></>}
-                    {msg.score === 2 && <><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /></>}
-                    {msg.score === 1 && <><FaStar style={{ color: '#fbbf24', fontSize: '0.9rem' }} /><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /></>}
-                    {msg.score === 0 && <><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /><FaRegStar style={{ color: '#d1d5db', fontSize: '0.9rem' }} /></>}
-                  </div>
-                )}
-                <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)', marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <FaClock style={{ fontSize: '0.65rem' }} />
-                  {msg.timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-            </div>
+            <ChatMessage key={idx} message={msg} />
           ))}
           
-          {loading && (
-            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <div className="message-ai" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <FaRobot style={{ fontSize: '1.25rem', color: 'var(--primary)' }} />
-                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  <span className="typing-dot" />
-                  <span className="typing-dot" />
-                  <span className="typing-dot" />
-                </div>
-              </div>
-            </div>
-          )}
+          {loading && <TypingIndicator />}
           
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input */}
-      <div style={{ background: 'var(--white)', borderTop: '2px solid var(--gray-200)', padding: '1rem 1rem 1.5rem', boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.05)' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+      {/* Input Area with Glass Effect */}
+      <div className="glass-header" style={{ 
+        padding: '1.5rem',
+        position: 'sticky',
+        bottom: 0,
+        borderTop: '1px solid rgba(255, 255, 255, 0.3)'
+      }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           {error && (
-            <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fee2e2', border: '2px solid #ef4444', borderRadius: '0.75rem', color: '#991b1b', fontSize: '0.875rem', fontWeight: '500' }}>
+            <div style={{ 
+              marginBottom: '1rem', 
+              padding: '1rem', 
+              background: 'rgba(254, 226, 226, 0.95)',
+              backdropFilter: 'blur(12px)',
+              border: '2px solid #ef4444', 
+              borderRadius: '1rem', 
+              color: '#991b1b', 
+              fontSize: '0.875rem', 
+              fontWeight: '500',
+              boxShadow: '0 4px 16px rgba(239, 68, 68, 0.2)'
+            }}>
               {error}
             </div>
           )}
           
-          <form onSubmit={handleSubmit}>
-            <div style={{ 
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              background: '#ffffff',
-              border: '2px solid #e5e7eb',
-              borderRadius: '50px',
-              padding: '0.625rem 0.875rem',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-              transition: 'all 0.3s ease'
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--primary)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(99, 102, 241, 0.15)';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = '#e5e7eb';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)';
-            }}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <input
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+              placeholder="Share your response..."
+              className="glass-input"
+              disabled={loading}
+              style={{ flex: 1 }}
+            />
+            
+            <button
+              type="submit"
+              disabled={loading || !userInput.trim()}
+              className="glass-button"
             >
-              <input
-                type="text"
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-                placeholder="Votre réponse ici..."
-                style={{ 
-                  flex: 1,
-                  border: 'none',
-                  outline: 'none',
-                  fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
-                  background: 'transparent',
-                  color: '#1f2937',
-                  padding: '0.5rem 0',
-                  fontFamily: 'inherit',
-                  minWidth: '0'
-                }}
-                disabled={loading}
-              />
-              
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'clamp(0.375rem, 2vw, 0.75rem)',
-                marginLeft: 'clamp(0.5rem, 2vw, 1rem)',
-                flexShrink: 0
-              }}>
-                <div style={{ 
-                  fontSize: 'clamp(0.75rem, 2vw, 0.875rem)', 
-                  color: '#9ca3af',
-                  fontWeight: '500',
-                  display: window.innerWidth < 480 ? 'none' : 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem'
-                }}>
-                  ⌘ {userInput.length}
+              {loading ? (
+                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                  <span className="typing-dot" style={{ width: '4px', height: '4px', background: 'white' }} />
+                  <span className="typing-dot" style={{ width: '4px', height: '4px', background: 'white' }} />
+                  <span className="typing-dot" style={{ width: '4px', height: '4px', background: 'white' }} />
                 </div>
-                
-                <button
-                  type="submit"
-                  disabled={loading || !userInput.trim()}
-                  style={{ 
-                    width: 'clamp(40px, 10vw, 48px)',
-                    height: 'clamp(40px, 10vw, 48px)',
-                    borderRadius: '50%',
-                    background: loading || !userInput.trim() ? '#d1d5db' : '#111827',
-                    border: 'none',
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: loading || !userInput.trim() ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.3s ease',
-                    fontSize: '1.25rem',
-                    boxShadow: loading || !userInput.trim() ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.2)',
-                    flexShrink: 0
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!loading && userInput.trim()) {
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.background = 'var(--primary)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!loading && userInput.trim()) {
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.background = '#111827';
-                    }
-                  }}
-                >
-                  {loading ? (
-                    <div style={{ display: 'flex', gap: '0.125rem' }}>
-                      <span className="typing-dot" style={{ width: '3px', height: '3px' }} />
-                      <span className="typing-dot" style={{ width: '3px', height: '3px' }} />
-                      <span className="typing-dot" style={{ width: '3px', height: '3px' }} />
-                    </div>
-                  ) : (
-                    <svg 
-                      width="22" 
-                      height="22" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2.5" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    >
-                      <path d="M12 19V5M5 12l7-7 7 7"/>
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
+              ) : (
+                <FaPaperPlane style={{ fontSize: '1.125rem' }} />
+              )}
+            </button>
           </form>
           
           <div style={{ 
-            marginTop: '0.75rem', 
+            marginTop: '0.875rem', 
             display: 'flex', 
-            flexDirection: window.innerWidth < 640 ? 'column' : 'row',
             justifyContent: 'space-between', 
-            alignItems: window.innerWidth < 640 ? 'flex-start' : 'center',
-            gap: '0.5rem',
-            fontSize: 'clamp(0.625rem, 2vw, 0.75rem)',
-            color: '#9ca3af'
+            alignItems: 'center',
+            fontSize: '0.75rem',
+            color: 'var(--gray-600)'
           }}>
             <p style={{ 
               fontWeight: '500', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '0.375rem' 
+              gap: '0.5rem' 
             }}>
-              <FaLightbulb style={{ color: 'var(--secondary)', fontSize: '0.875rem' }} />
+              <FaLightbulb style={{ color: 'var(--secondary)', fontSize: '1rem' }} />
               Soyez précis et détaillé
             </p>
-            <p style={{ 
-              fontWeight: '500',
-              fontStyle: 'italic',
-              display: window.innerWidth < 480 ? 'none' : 'block'
-            }}>
-              Entrée pour envoyer
+            <p style={{ fontWeight: '500' }}>
+              {userInput.length} caractères
             </p>
           </div>
         </div>

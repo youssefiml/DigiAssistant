@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 import { sessionAPI } from '../services/api';
 import { FaPaperPlane, FaLightbulb } from 'react-icons/fa';
 import ChatMessage from '../components/ChatMessage';
@@ -124,31 +125,23 @@ export default function DiagnosticPage() {
       background: 'linear-gradient(135deg, #ffffff 0%, #e0f2f1 50%, #ffffff 100%)'
     }}>
       {/* Header with Glass Effect */}
-      <header className="glass-header" style={{ 
-        padding: '1rem 1.5rem',
-        position: 'sticky',
-        top: 0,
-        zIndex: 40
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <img 
-              src="/logo.png" 
-              alt="DigiAssistant Logo" 
-              style={{ height: '2.5rem', width: 'auto' }} 
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
-            <div>
-              <h1 style={{ fontSize: '1.125rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '0.25rem' }}>
-                Diagnostic Digital
-              </h1>
-              <p style={{ fontSize: '0.875rem', color: 'var(--gray-600)', fontWeight: '500' }}>
-                Question <span style={{ color: 'var(--primary)', fontWeight: '700' }}>{progress.current + 1}</span> / {progress.total}
-              </p>
-            </div>
-          </div>
+      <Navbar 
+        title="Diagnostic Digital"
+        subtitle={
+          <p style={{ fontSize: '0.875rem', color: 'var(--gray-600)', fontWeight: '500', margin: 0 }}>
+            Question <span style={{ color: 'var(--primary)', fontWeight: '700' }}>{progress.current + 1}</span> / {progress.total}
+          </p>
+        }
+        isSticky={true}
+        className="glass-header"
+        style={{ padding: '1rem 1.5rem' }}
+        logoHeight="2.5rem"
+        titleStyle={{
+          fontSize: '1.125rem',
+          color: 'var(--primary)',
+          marginBottom: '0.25rem'
+        }}
+        rightContent={
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--secondary)' }}>
               {Math.round(progressPercentage)}%
@@ -169,8 +162,8 @@ export default function DiagnosticPage() {
               }} />
             </div>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* Messages Container */}
       <div style={{ 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 import { sessionAPI } from '../services/api';
 import {  
   FaIndustry, 
@@ -48,24 +49,7 @@ export default function FormPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#fafafa' }}>
       {/* Header */}
-      <header style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '0.75rem 0' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img 
-            src="/logo.png" 
-            alt="DigiAssistant Logo" 
-            style={{ height: '2rem', width: 'auto' }} 
-            onError={(e) => {
-              // Fallback if logo doesn't exist
-              e.target.style.display = 'none';
-            }}
-          />
-          <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'rgb(0, 77, 77)', marginBottom: '0' }}>
-              DigiAssistant
-            </h1>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Form Section */}
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '4rem 2rem' }}>

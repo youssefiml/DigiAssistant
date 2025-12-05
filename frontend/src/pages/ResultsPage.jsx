@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 import { sessionAPI } from '../services/api';
 import { 
   FaHome,
@@ -134,28 +135,18 @@ export default function ResultsPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
       {/* Header */}
-      <header style={{ background: '#ffffff', borderBottom: '1px solid #e5e7eb', padding: '1rem 2rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <img 
-              src="/logo.png" 
-              alt="Digitancy Logo" 
-              style={{ height: '2.5rem', width: 'auto' }} 
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
-            <div>
-              <h1 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', margin: 0 }}>
-                Résultats du Diagnostic
-              </h1>
-              {companyName && (
-                <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>
-                  {companyName}
-                </p>
-              )}
-            </div>
-          </div>
+      <Navbar 
+        title="Résultats du Diagnostic"
+        subtitle={companyName}
+        logoHeight="2.5rem"
+        style={{ padding: '1rem 2rem' }}
+        titleStyle={{
+          fontSize: '1.25rem',
+          fontWeight: '600',
+          color: '#111827',
+          margin: 0
+        }}
+        rightContent={
           <button 
             onClick={() => navigate('/')} 
             className="btn-secondary"
@@ -174,8 +165,8 @@ export default function ResultsPage() {
           >
             <FaHome /> Dashboard
           </button>
-        </div>
-      </header>
+        }
+      />
 
       {/* Main Content */}
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
